@@ -1,0 +1,166 @@
+import { Router, type Request, type Response } from 'express';
+import { dataStore } from '../data/DataStore.js';
+import type {
+  StatsOverview,
+  PopularDish,
+  TimeDistributionItem,
+  ErrorProneItem,
+  MemberCompletion,
+  StepType,
+} from '../types/index.js';
+
+const router = Router();
+
+router.get('/overview', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const overview: StatsOverview = {
+      totalRecipes: dataStore.getRecipes().length,
+      totalFeasts: dataStore.getFeasts().length,
+      totalReviews: dataStore.getReviews().length,
+      totalMembers: dataStore.getMembers().length,
+    };
+    res.json({ success: true, data: overview });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to get overview' });
+  }
+});
+
+router.get('/popular-dishes', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const feasts = dataStore.getFeasts();
+    const recipeCountMap = new Map<string, number>();
+    const recipeNameMap = new Map<string, string>();
+
+    const recipes = dataStore.getRecipes();
+    for (const r of recipes) {
+      recipeNameMap.set(r.id, r.name);
+    }
+
+    for (const feast of feasts) {
+      for (const rid of feast.recipeIds) {
+        recipeCountMap.set(rid, (recipeCountMap.get(rid) || 0) + 1);
+      }
+    }
+
+    const popularDishes: PopularDish[] = Array.from(recipeCountMap.entries())
+      .map(([rid, count]) => ({
+        name: recipeNameMap.get(rid) || rid,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    res.json({ success: true, data: popularDishes });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to get popular dishes' });
+  }
+});
+
+router.get('/time-distribution', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const recipes = dataStore.getRecipes();
+    const typeDurations = new Map<StepType, { total: number; count: number }>();
+    const typeLabels: Record<StepType, string> = {
+      'wash-cut': '洗切备菜',
+      'prep': '备料调味',
+      'cooking': '烹饪烧制',
+      'plating': '装盘出品',
+    };
+
+    for (const recipe of recipes) {
+      for (const step of recipe.steps) {
+        const existing = typeDurations.get(step.type) || { total: 0, count: 0 };
+        existing.total += step.duration;
+        existing.count += 1;
+        typeDurations.set(step.type, existing);
+      }
+    }
+
+    const distribution: TimeDistributionItem[] = (['wash-cut', 'prep', 'cooking', 'plating'] as StepType[]).map(
+      (type) => {
+        const data = typeDurations.get(type) || { total: 0, count: 0 };
+        return {
+          type,
+          label: typeLabels[type],
+          avgMinutes: data.count > 0 ? Math.round((data.total / data.count) * 10) / 10 : 0,
+        };
+      }
+    );
+
+    res.json({ success: true, data: distribution });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to get time distribution' });
+  }
+});
+
+router.get('/error-prone', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const reviews = dataStore.getReviews();
+    const recipes = dataStore.getRecipes();
+    const stepErrorMap = new Map<string, number>();
+    const stepNameMap = new Map<string, string>();
+
+    for (const recipe of recipes) {
+      for (const step of recipe.steps) {
+        stepNameMap.set(step.id, `${recipe.name} - ${step.title}`);
+      }
+    }
+
+    for (const review of reviews) {
+      for (const stepId of review.errorSteps) {
+        stepErrorMap.set(stepId, (stepErrorMap.get(stepId) || 0) + 1);
+      }
+    }
+
+    const errorProne: ErrorProneItem[] = Array.from(stepErrorMap.entries())
+      .map(([stepId, errorCount]) => ({
+        step: stepNameMap.get(stepId) || stepId,
+        errorCount,
+      }))
+      .sort((a, b) => b.errorCount - a.errorCount)
+      .slice(0, 10);
+
+    res.json({ success: true, data: errorProne });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to get error-prone steps' });
+  }
+});
+
+router.get('/member-completion', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const feasts = dataStore.getFeasts();
+    const members = dataStore.getMembers();
+    const memberStats = new Map<string, { total: number; completed: number }>();
+
+    for (const feast of feasts) {
+      for (const task of feast.tasks) {
+        if (task.assignedMemberId) {
+          const existing = memberStats.get(task.assignedMemberId) || { total: 0, completed: 0 };
+          existing.total += 1;
+          if (task.completed) {
+            existing.completed += 1;
+          }
+          memberStats.set(task.assignedMemberId, existing);
+        }
+      }
+    }
+
+    const memberCompletion: MemberCompletion[] = members.map((m) => {
+      const stats = memberStats.get(m.id) || { total: 0, completed: 0 };
+      return {
+        memberId: m.id,
+        name: m.name,
+        totalTasks: stats.total,
+        completedTasks: stats.completed,
+        completionRate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
+      };
+    });
+
+    memberCompletion.sort((a, b) => b.completionRate - a.completionRate);
+    res.json({ success: true, data: memberCompletion });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to get member completion' });
+  }
+});
+
+export default router;
