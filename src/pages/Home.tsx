@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { ChefHat, Users, ClipboardList, MessageSquare, ChevronRight, Sparkles, Clock, AlertCircle } from 'lucide-react';
+import { ChefHat, Users, ClipboardList, MessageSquare, ChevronRight, Sparkles, Clock, AlertCircle, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { statsApi, recipeApi, feastApi } from '@/lib/api';
-import type { StatsOverview, Recipe, Feast } from '@/types';
+import type { StatsOverview, Recipe, Feast, FeastPurchaseOverview } from '@/types';
 
 export default function Home() {
   const [overview, setOverview] = useState<StatsOverview | null>(null);
   const [recentRecipes, setRecentRecipes] = useState<Recipe[]>([]);
   const [recentFeasts, setRecentFeasts] = useState<Feast[]>([]);
+  const [purchaseOverview, setPurchaseOverview] = useState<FeastPurchaseOverview[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,10 +15,12 @@ export default function Home() {
       statsApi.getOverview(),
       recipeApi.getAll(),
       feastApi.getAll(),
-    ]).then(([overview, recipes, feasts]) => {
+      statsApi.getPurchaseOverview(),
+    ]).then(([overview, recipes, feasts, purchase]) => {
       setOverview(overview);
       setRecentRecipes(recipes.slice(0, 3));
       setRecentFeasts(feasts.slice(0, 3));
+      setPurchaseOverview(purchase);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -202,6 +205,67 @@ export default function Home() {
           </div>
         </section>
       </div>
+
+      <section className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-lg font-bold text-stone-800 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-blue-500" />
+              近期家宴采购概览
+            </h3>
+            <p className="text-sm text-stone-500 mt-1">各场家宴食材采购进度一览</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-stone-400" />
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {purchaseOverview.map((item) => (
+            <div
+              key={item.feastId}
+              className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-transparent border border-blue-100 hover:border-blue-200 transition-colors"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h4 className="font-semibold text-stone-800 text-sm">{item.feastName}</h4>
+                  <p className="text-xs text-stone-500 mt-0.5">{item.feastDate}</p>
+                </div>
+                <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                  {item.completionRate}%
+                </span>
+              </div>
+              <div className="h-2 bg-stone-100 rounded-full overflow-hidden mb-3">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full transition-all"
+                  style={{ width: `${item.completionRate}%` }}
+                ></div>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-xs">
+                <div className="text-center">
+                  <div className="font-bold text-stone-700">{item.totalIngredients}</div>
+                  <div className="text-stone-400">总食材</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-emerald-600">{item.purchasedCount}</div>
+                  <div className="text-stone-400">已采购</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-red-500">{item.outOfStockCount}</div>
+                  <div className="text-stone-400">缺货</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-amber-500">{item.replacedCount}</div>
+                  <div className="text-stone-400">替代</div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {purchaseOverview.length === 0 && (
+            <div className="col-span-full text-center py-8 text-stone-400">
+              <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">暂无采购数据</p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

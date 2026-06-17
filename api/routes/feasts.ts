@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { dataStore } from '../data/DataStore.js';
-import type { Feast, FeastTask, CalculatedIngredient, Recipe, TaskType } from '../types/index.js';
+import type { Feast, FeastTask, CalculatedIngredient, Recipe, TaskType, PurchaseStatus, ReplacementIngredient } from '../types/index.js';
 
 const router = Router();
 
@@ -8,9 +8,22 @@ function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function calculateIngredients(recipes: Recipe[], basePeople: number, targetPeople: number): CalculatedIngredient[] {
+function calculateIngredients(
+  recipes: Recipe[],
+  basePeople: number,
+  targetPeople: number,
+  existingIngredients?: CalculatedIngredient[]
+): CalculatedIngredient[] {
   const factor = targetPeople / basePeople;
   const ingredientMap = new Map<string, CalculatedIngredient>();
+  const existingMap = new Map<string, CalculatedIngredient>();
+
+  if (existingIngredients) {
+    for (const ing of existingIngredients) {
+      const key = `${ing.name}_${ing.unit}`;
+      existingMap.set(key, ing);
+    }
+  }
 
   for (const recipe of recipes) {
     const recipeFactor = (recipe.servings > 0 ? factor : 1) * (targetPeople / (basePeople || 1));
@@ -27,13 +40,19 @@ function calculateIngredients(recipes: Recipe[], basePeople: number, targetPeopl
           existing.sourceRecipes.push(recipe.name);
         }
       } else {
-        ingredientMap.set(key, {
+        const existingPurchaseData = existingMap.get(key);
+        const newIngredient: CalculatedIngredient = {
           name: ing.name,
           amount: scaledAmount,
           unit: ing.unit,
           category: ing.category,
           sourceRecipes: [recipe.name],
-        });
+          purchaseStatus: existingPurchaseData?.purchaseStatus || 'pending',
+          outOfStockNote: existingPurchaseData?.outOfStockNote,
+          replacement: existingPurchaseData?.replacement,
+          purchasedAt: existingPurchaseData?.purchasedAt,
+        };
+        ingredientMap.set(key, newIngredient);
       }
     }
   }
@@ -167,7 +186,12 @@ router.put('/:id/recalculate', async (req: Request, res: Response): Promise<void
     const allRecipes = dataStore.getRecipes();
     const selectedRecipes = allRecipes.filter((r) => existing.recipeIds.includes(r.id));
     const baseServings = selectedRecipes.reduce((sum, r) => sum + r.servings, 0) / Math.max(selectedRecipes.length, 1);
-    const ingredients = calculateIngredients(selectedRecipes, baseServings, people || existing.people);
+    const ingredients = calculateIngredients(
+      selectedRecipes,
+      baseServings,
+      people || existing.people,
+      existing.ingredients
+    );
 
     const updated = dataStore.updateFeast(id, {
       people: people || existing.people,
@@ -258,6 +282,111 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to delete feast' });
+  }
+});
+
+router.put('/:id/ingredients/:ingredientName/purchase-status', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id, ingredientName } = req.params;
+    const { status, outOfStockNote, replacement } = req.body as {
+      status: PurchaseStatus;
+      outOfStockNote?: string;
+      replacement?: ReplacementIngredient;
+    };
+
+    const existing = dataStore.getFeastById(id);
+    if (!existing) {
+      res.status(404).json({ success: false, error: 'Feast not found' });
+      return;
+    }
+
+    const decodedName = decodeURIComponent(ingredientName);
+
+    const updatedIngredients = existing.ingredients.map((ing) => {
+      if (ing.name === decodedName) {
+        const updated: CalculatedIngredient = {
+          ...ing,
+          purchaseStatus: status,
+          purchasedAt: status === 'purchased' ? new Date().toISOString() : ing.purchasedAt,
+        };
+        if (outOfStockNote !== undefined) {
+          updated.outOfStockNote = outOfStockNote;
+        }
+        if (replacement !== undefined) {
+          updated.replacement = replacement;
+        }
+        if (status !== 'out-of-stock') {
+          delete updated.outOfStockNote;
+        }
+        if (status !== 'replaced') {
+          delete updated.replacement;
+        }
+        return updated;
+      }
+      return ing;
+    });
+
+    const updated = dataStore.updateFeast(id, { ingredients: updatedIngredients });
+    const updatedIngredient = updated?.ingredients.find((ing) => ing.name === decodedName);
+
+    res.json({ success: true, data: updatedIngredient });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ success: false, error: 'Failed to update ingredient purchase status' });
+  }
+});
+
+router.put('/:id/ingredients/batch-update', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { updates } = req.body as {
+      updates: Array<{
+        name: string;
+        status?: PurchaseStatus;
+        outOfStockNote?: string;
+        replacement?: ReplacementIngredient;
+      }>;
+    };
+
+    const existing = dataStore.getFeastById(id);
+    if (!existing) {
+      res.status(404).json({ success: false, error: 'Feast not found' });
+      return;
+    }
+
+    let updatedIngredients = [...existing.ingredients];
+
+    for (const update of updates) {
+      updatedIngredients = updatedIngredients.map((ing) => {
+        if (ing.name === update.name) {
+          const updated: CalculatedIngredient = { ...ing };
+          if (update.status !== undefined) {
+            updated.purchaseStatus = update.status;
+            updated.purchasedAt = update.status === 'purchased' ? new Date().toISOString() : ing.purchasedAt;
+          }
+          if (update.outOfStockNote !== undefined) {
+            updated.outOfStockNote = update.outOfStockNote;
+          }
+          if (update.replacement !== undefined) {
+            updated.replacement = update.replacement;
+          }
+          if (update.status && update.status !== 'out-of-stock') {
+            delete updated.outOfStockNote;
+          }
+          if (update.status && update.status !== 'replaced') {
+            delete updated.replacement;
+          }
+          return updated;
+        }
+        return ing;
+      });
+    }
+
+    const updated = dataStore.updateFeast(id, { ingredients: updatedIngredients });
+    res.json({ success: true, data: updated?.ingredients });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ success: false, error: 'Failed to batch update ingredients' });
   }
 });
 

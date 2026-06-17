@@ -11,8 +11,8 @@
         "硬菜",
         "奶奶拿手"
       ],
-      "createdAt": "2026-06-17T14:50:47.354Z",
-      "updatedAt": "2026-06-17T14:50:47.354Z",
+      "createdAt": "2026-06-17T16:40:56.285Z",
+      "updatedAt": "2026-06-17T16:40:56.285Z",
       "ingredients": [
         {
           "id": "i1",
@@ -177,8 +177,8 @@
         "酸甜",
         "妈妈拿手"
       ],
-      "createdAt": "2026-06-17T14:50:47.354Z",
-      "updatedAt": "2026-06-17T14:50:47.354Z",
+      "createdAt": "2026-06-17T16:40:56.285Z",
+      "updatedAt": "2026-06-17T16:40:56.285Z",
       "ingredients": [
         {
           "id": "i9",
@@ -319,8 +319,8 @@
         "快手菜",
         "下酒菜"
       ],
-      "createdAt": "2026-06-17T14:50:47.354Z",
-      "updatedAt": "2026-06-17T14:50:47.354Z",
+      "createdAt": "2026-06-17T16:40:56.285Z",
+      "updatedAt": "2026-06-17T16:40:56.285Z",
       "ingredients": [
         {
           "id": "i16",
@@ -441,8 +441,8 @@
         "快手菜",
         "下饭菜"
       ],
-      "createdAt": "2026-06-17T14:50:47.354Z",
-      "updatedAt": "2026-06-17T14:50:47.354Z",
+      "createdAt": "2026-06-17T16:40:56.285Z",
+      "updatedAt": "2026-06-17T16:40:56.285Z",
       "ingredients": [
         {
           "id": "i23",
@@ -569,8 +569,8 @@
         "海鲜",
         "宴客菜"
       ],
-      "createdAt": "2026-06-17T14:50:47.354Z",
-      "updatedAt": "2026-06-17T14:50:47.354Z",
+      "createdAt": "2026-06-17T16:40:56.285Z",
+      "updatedAt": "2026-06-17T16:40:56.285Z",
       "ingredients": [
         {
           "id": "i28",
@@ -730,7 +730,7 @@
         "r4"
       ],
       "status": "completed",
-      "createdAt": "2026-06-15T14:50:47.354Z",
+      "createdAt": "2026-06-15T16:40:56.286Z",
       "ingredients": [
         {
           "name": "五花肉",
@@ -739,74 +739,9 @@
           "category": "main",
           "sourceRecipes": [
             "奶奶的红烧肉"
-          ]
-        },
-        {
-          "name": "生姜",
-          "amount": 12,
-          "unit": "片",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "奶奶的红烧肉",
-            "妈妈的糖醋排骨"
-          ]
-        },
-        {
-          "name": "八角",
-          "amount": 4,
-          "unit": "个",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "奶奶的红烧肉"
-          ]
-        },
-        {
-          "name": "桂皮",
-          "amount": 2,
-          "unit": "小块",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "奶奶的红烧肉"
-          ]
-        },
-        {
-          "name": "冰糖",
-          "amount": 60,
-          "unit": "克",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "奶奶的红烧肉"
-          ]
-        },
-        {
-          "name": "生抽",
-          "amount": 10,
-          "unit": "勺",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "奶奶的红烧肉",
-            "妈妈的糖醋排骨",
-            "爸爸的凉拌黄瓜"
-          ]
-        },
-        {
-          "name": "老抽",
-          "amount": 2,
-          "unit": "勺",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "奶奶的红烧肉"
-          ]
-        },
-        {
-          "name": "料酒",
-          "amount": 7,
-          "unit": "勺",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "奶奶的红烧肉",
-            "妈妈的糖醋排骨"
-          ]
+          ],
+          "purchaseStatus": "pending",
+          "purchasedAt": "2026-06-15T16:40:56.286Z"
         },
         {
           "name": "猪肋排",
@@ -815,36 +750,9 @@
           "category": "main",
           "sourceRecipes": [
             "妈妈的糖醋排骨"
-          ]
-        },
-        {
-          "name": "白糖",
-          "amount": 12,
-          "unit": "勺",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "妈妈的糖醋排骨",
-            "外婆的番茄炒蛋"
-          ]
-        },
-        {
-          "name": "米醋",
-          "amount": 12,
-          "unit": "勺",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "妈妈的糖醋排骨",
-            "爸爸的凉拌黄瓜"
-          ]
-        },
-        {
-          "name": "白芝麻",
-          "amount": 3,
-          "unit": "勺",
-          "category": "side",
-          "sourceRecipes": [
-            "妈妈的糖醋排骨"
-          ]
+          ],
+          "purchaseStatus": "purchased",
+          "purchasedAt": "2026-06-15T16:40:56.286Z"
         },
         {
           "name": "黄瓜",
@@ -853,44 +761,9 @@
           "category": "main",
           "sourceRecipes": [
             "爸爸的凉拌黄瓜"
-          ]
-        },
-        {
-          "name": "大蒜",
-          "amount": 9,
-          "unit": "瓣",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "爸爸的凉拌黄瓜"
-          ]
-        },
-        {
-          "name": "食盐",
-          "amount": 4.5,
-          "unit": "小勺",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "爸爸的凉拌黄瓜",
-            "外婆的番茄炒蛋"
-          ]
-        },
-        {
-          "name": "香油",
-          "amount": 3,
-          "unit": "勺",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "爸爸的凉拌黄瓜"
-          ]
-        },
-        {
-          "name": "白糖",
-          "amount": 3,
-          "unit": "小勺",
-          "category": "seasoning",
-          "sourceRecipes": [
-            "爸爸的凉拌黄瓜"
-          ]
+          ],
+          "purchaseStatus": "purchased",
+          "purchasedAt": "2026-06-15T16:40:56.286Z"
         },
         {
           "name": "番茄",
@@ -899,7 +772,9 @@
           "category": "main",
           "sourceRecipes": [
             "外婆的番茄炒蛋"
-          ]
+          ],
+          "purchaseStatus": "out-of-stock",
+          "outOfStockNote": "菜市场卖完了"
         },
         {
           "name": "鸡蛋",
@@ -908,16 +783,14 @@
           "category": "main",
           "sourceRecipes": [
             "外婆的番茄炒蛋"
-          ]
-        },
-        {
-          "name": "葱花",
-          "amount": 3,
-          "unit": "小撮",
-          "category": "side",
-          "sourceRecipes": [
-            "外婆的番茄炒蛋"
-          ]
+          ],
+          "purchaseStatus": "replaced",
+          "replacement": {
+            "name": "鸭蛋",
+            "amount": 9,
+            "unit": "个",
+            "note": "用鸭蛋替代，口感更丰富"
+          }
         }
       ],
       "tasks": [
@@ -1033,7 +906,7 @@
         "r5"
       ],
       "status": "completed",
-      "createdAt": "2026-06-02T14:50:47.354Z",
+      "createdAt": "2026-06-02T16:40:56.286Z",
       "ingredients": [
         {
           "name": "五花肉",
@@ -1042,7 +915,8 @@
           "category": "main",
           "sourceRecipes": [
             "奶奶的红烧肉"
-          ]
+          ],
+          "purchaseStatus": "purchased"
         },
         {
           "name": "鲈鱼",
@@ -1051,7 +925,8 @@
           "category": "main",
           "sourceRecipes": [
             "清蒸鲈鱼"
-          ]
+          ],
+          "purchaseStatus": "purchased"
         }
       ],
       "tasks": [
@@ -1103,7 +978,7 @@
         "r5"
       ],
       "status": "completed",
-      "createdAt": "2026-05-18T14:50:47.354Z",
+      "createdAt": "2026-05-18T16:40:56.286Z",
       "ingredients": [],
       "tasks": [
         {
@@ -1164,7 +1039,7 @@
         "s2",
         "s5"
       ],
-      "createdAt": "2026-06-16T14:50:47.355Z"
+      "createdAt": "2026-06-16T16:40:56.286Z"
     },
     {
       "id": "rv2",
@@ -1177,7 +1052,7 @@
       "errorSteps": [
         "s8"
       ],
-      "createdAt": "2026-06-16T14:50:47.355Z"
+      "createdAt": "2026-06-16T16:40:56.286Z"
     },
     {
       "id": "rv3",
@@ -1188,7 +1063,7 @@
       "adjustmentSuggestion": "下次少放一瓣蒜",
       "rating": 5,
       "errorSteps": [],
-      "createdAt": "2026-06-16T14:50:47.355Z"
+      "createdAt": "2026-06-16T16:40:56.286Z"
     },
     {
       "id": "rv4",
@@ -1199,7 +1074,7 @@
       "adjustmentSuggestion": "保持这个水准！",
       "rating": 5,
       "errorSteps": [],
-      "createdAt": "2026-06-03T14:50:47.355Z"
+      "createdAt": "2026-06-03T16:40:56.286Z"
     },
     {
       "id": "rv5",
@@ -1212,7 +1087,7 @@
       "errorSteps": [
         "s18"
       ],
-      "createdAt": "2026-06-03T14:50:47.355Z"
+      "createdAt": "2026-06-03T16:40:56.286Z"
     },
     {
       "id": "rv6",
@@ -1225,7 +1100,7 @@
       "errorSteps": [
         "s3"
       ],
-      "createdAt": "2026-05-19T14:50:47.355Z"
+      "createdAt": "2026-05-19T16:40:56.286Z"
     },
     {
       "id": "rv7",
@@ -1238,7 +1113,7 @@
       "errorSteps": [
         "s8"
       ],
-      "createdAt": "2026-05-19T14:50:47.355Z"
+      "createdAt": "2026-05-19T16:40:56.286Z"
     }
   ]
 }

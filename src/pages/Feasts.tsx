@@ -9,13 +9,28 @@ import {
   Calendar,
   RefreshCw,
   Check,
+  CheckCircle2,
   Circle,
   ShoppingCart,
   Trash2,
   Edit3,
+  AlertTriangle,
+  ArrowLeftRight,
+  Clock,
+  Package,
 } from 'lucide-react';
 import { feastApi, recipeApi, memberApi } from '@/lib/api';
-import type { Feast, Recipe, Member, FeastTask, TaskType, FeastStatus, CalculatedIngredient } from '@/types';
+import type {
+  Feast,
+  Recipe,
+  Member,
+  FeastTask,
+  TaskType,
+  FeastStatus,
+  CalculatedIngredient,
+  PurchaseStatus,
+  ReplacementIngredient,
+} from '@/types';
 import { clsx } from 'clsx';
 
 const taskTypeConfig: Record<TaskType, { label: string; color: string; icon: string; bg: string }> = {
@@ -36,6 +51,50 @@ const categoryLabels: Record<string, { label: string; color: string }> = {
   seasoning: { label: '调料', color: 'bg-amber-100 text-amber-700' },
   side: { label: '配菜', color: 'bg-emerald-100 text-emerald-700' },
 };
+
+const purchaseStatusConfig: Record<PurchaseStatus, { label: string; color: string; bg: string; dot: string }> = {
+  pending: { label: '待采购', color: 'text-stone-600', bg: 'bg-stone-100 border-stone-200', dot: 'bg-stone-400' },
+  purchased: { label: '已采购', color: 'text-emerald-700', bg: 'bg-emerald-100 border-emerald-200', dot: 'bg-emerald-500' },
+  'out-of-stock': { label: '已缺货', color: 'text-red-700', bg: 'bg-red-100 border-red-200', dot: 'bg-red-500' },
+  replaced: { label: '已替代', color: 'text-amber-700', bg: 'bg-amber-100 border-amber-200', dot: 'bg-amber-500' },
+};
+
+function getPurchaseStats(ingredients: CalculatedIngredient[]) {
+  const total = ingredients.length;
+  let purchased = 0;
+  let pending = 0;
+  let outOfStock = 0;
+  let replaced = 0;
+
+  for (const ing of ingredients) {
+    const status = ing.purchaseStatus || 'pending';
+    switch (status) {
+      case 'purchased':
+        purchased += 1;
+        break;
+      case 'pending':
+        pending += 1;
+        break;
+      case 'out-of-stock':
+        outOfStock += 1;
+        break;
+      case 'replaced':
+        replaced += 1;
+        break;
+      default:
+        pending += 1;
+    }
+  }
+
+  return {
+    total,
+    purchased,
+    pending,
+    outOfStock,
+    replaced,
+    completionRate: total > 0 ? Math.round((purchased / total) * 100) : 0,
+  };
+}
 
 export default function Feasts() {
   const [feasts, setFeasts] = useState<Feast[]>([]);
@@ -139,6 +198,25 @@ export default function Feasts() {
     }
   };
 
+  const handleUpdatePurchaseStatus = async (
+    feastId: string,
+    ingredientName: string,
+    status: PurchaseStatus,
+    outOfStockNote?: string,
+    replacement?: ReplacementIngredient
+  ) => {
+    try {
+      await feastApi.updateIngredientPurchaseStatus(feastId, ingredientName, {
+        status,
+        outOfStockNote,
+        replacement,
+      });
+      fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const getMemberById = (id?: string) => members.find((m) => m.id === id);
   const getRecipeById = (id: string) => recipes.find((r) => r.id === id);
 
@@ -207,6 +285,7 @@ export default function Feasts() {
             const completedTasks = feast.tasks.filter((t) => t.completed).length;
             const totalTasks = feast.tasks.length;
             const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            const purchaseStats = getPurchaseStats(feast.ingredients);
 
             return (
               <div
@@ -244,15 +323,35 @@ export default function Feasts() {
                             {feast.recipeIds.length}道菜
                           </span>
                           <span>{completedTasks}/{totalTasks}任务完成</span>
+                          <span className="flex items-center gap-1">
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                            采购 {purchaseStats.purchased}/{purchaseStats.total}
+                          </span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-40 h-2 bg-stone-100 rounded-full overflow-hidden hidden sm:block">
-                        <div
-                          className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all"
-                          style={{ width: `${progress}%` }}
-                        ></div>
+                      <div className="hidden sm:flex flex-col gap-1 w-40">
+                        <div className="text-xs text-stone-400 flex items-center gap-1">
+                          <span>任务进度</span>
+                          <span className="ml-auto text-emerald-600 font-medium">{progress}%</span>
+                        </div>
+                        <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all"
+                            style={{ width: `${progress}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-stone-400 flex items-center gap-1 mt-1">
+                          <span>采购进度</span>
+                          <span className="ml-auto text-blue-600 font-medium">{purchaseStats.completionRate}%</span>
+                        </div>
+                        <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full transition-all"
+                            style={{ width: `${purchaseStats.completionRate}%` }}
+                          ></div>
+                        </div>
                       </div>
                       <div className="sm:hidden text-sm text-emerald-600 font-medium">{progress}%</div>
                       <div className="flex items-center">
@@ -309,10 +408,30 @@ export default function Feasts() {
 
                     <div className="grid lg:grid-cols-2 gap-6">
                       <div className="space-y-4">
-                        <h4 className="font-bold text-stone-800 flex items-center gap-2">
-                          <ShoppingCart className="w-5 h-5 text-amber-500" />
-                          食材清单（{feast.people}人份）
-                        </h4>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-stone-800 flex items-center gap-2">
+                            <ShoppingCart className="w-5 h-5 text-amber-500" />
+                            食材清单（{feast.people}人份）
+                          </h4>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="flex items-center gap-1 text-emerald-600">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                              已采购 {purchaseStats.purchased}
+                            </span>
+                            <span className="flex items-center gap-1 text-stone-500">
+                              <span className="w-2 h-2 rounded-full bg-stone-400"></span>
+                              待采购 {purchaseStats.pending}
+                            </span>
+                            <span className="flex items-center gap-1 text-red-500">
+                              <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                              缺货 {purchaseStats.outOfStock}
+                            </span>
+                            <span className="flex items-center gap-1 text-amber-500">
+                              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                              替代 {purchaseStats.replaced}
+                            </span>
+                          </div>
+                        </div>
                         {Object.entries(groupedIngredients(feast.ingredients)).map(([cat, ings]) => {
                           if (ings.length === 0) return null;
                           const cfg = categoryLabels[cat] || categoryLabels.main;
@@ -322,19 +441,173 @@ export default function Feasts() {
                                 {cfg.label}
                               </div>
                               <div className="bg-white rounded-xl border border-stone-200 divide-y divide-stone-100">
-                                {ings.map((ing, idx) => (
-                                  <div key={idx} className="px-4 py-2.5 flex items-center justify-between text-sm">
-                                    <span className="text-stone-700">{ing.name}</span>
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-semibold text-stone-800">
-                                        {ing.amount} {ing.unit}
-                                      </span>
-                                      <span className="text-xs text-stone-400 text-right max-w-[120px] truncate">
-                                        {ing.sourceRecipes.join('、')}
-                                      </span>
+                                {ings.map((ing, idx) => {
+                                  const status = ing.purchaseStatus || 'pending';
+                                  const statusCfg = purchaseStatusConfig[status];
+                                  return (
+                                    <div key={idx} className="px-4 py-3">
+                                      <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            onClick={() => {
+                                              const nextStatus: PurchaseStatus = status === 'purchased' ? 'pending' : 'purchased';
+                                              handleUpdatePurchaseStatus(feast.id, ing.name, nextStatus);
+                                            }}
+                                            className={clsx(
+                                              'flex-shrink-0 transition-colors',
+                                              status === 'purchased' ? 'text-emerald-500' : 'text-stone-300 hover:text-stone-500'
+                                            )}
+                                          >
+                                            {status === 'purchased' ? (
+                                              <CheckCircle2 className="w-5 h-5" />
+                                            ) : (
+                                              <Circle className="w-5 h-5" />
+                                            )}
+                                          </button>
+                                          <div>
+                                            <span className={clsx(
+                                              'text-stone-700 font-medium',
+                                              status === 'purchased' && 'text-stone-400 line-through'
+                                            )}>
+                                              {ing.name}
+                                            </span>
+                                            <p className="text-xs text-stone-400 mt-0.5">
+                                              {ing.sourceRecipes.join('、')}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-semibold text-stone-800">
+                                            {ing.amount} {ing.unit}
+                                          </span>
+                                          <select
+                                            value={status}
+                                            onChange={(e) => handleUpdatePurchaseStatus(
+                                              feast.id,
+                                              ing.name,
+                                              e.target.value as PurchaseStatus
+                                            )}
+                                            className={clsx(
+                                              'px-2 py-1 rounded-lg border text-xs font-medium outline-none focus:ring-2 focus:ring-offset-1',
+                                              statusCfg.bg,
+                                              statusCfg.color,
+                                              'border-transparent'
+                                            )}
+                                          >
+                                            <option value="pending">待采购</option>
+                                            <option value="purchased">已采购</option>
+                                            <option value="out-of-stock">已缺货</option>
+                                            <option value="replaced">已替代</option>
+                                          </select>
+                                        </div>
+                                      </div>
+                                      {status === 'out-of-stock' && (
+                                        <div className="mt-2 ml-7 pl-3 border-l-2 border-red-200 bg-red-50/50 rounded-r-lg p-2">
+                                          <div className="flex items-center gap-1 text-xs text-red-600 font-medium mb-1">
+                                            <AlertTriangle className="w-3 h-3" />
+                                            缺货备注
+                                          </div>
+                                          <input
+                                            type="text"
+                                            value={ing.outOfStockNote || ''}
+                                            onChange={(e) => handleUpdatePurchaseStatus(
+                                              feast.id,
+                                              ing.name,
+                                              'out-of-stock',
+                                              e.target.value
+                                            )}
+                                            placeholder="请输入缺货原因..."
+                                            className="w-full px-2 py-1.5 text-xs rounded-lg border border-red-200 bg-white outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200"
+                                          />
+                                        </div>
+                                      )}
+                                      {status === 'replaced' && (
+                                        <div className="mt-2 ml-7 pl-3 border-l-2 border-amber-200 bg-amber-50/50 rounded-r-lg p-2 space-y-2">
+                                          <div className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+                                            <ArrowLeftRight className="w-3 h-3" />
+                                            替代食材
+                                          </div>
+                                          <div className="grid grid-cols-3 gap-2">
+                                            <input
+                                              type="text"
+                                              value={ing.replacement?.name || ''}
+                                              onChange={(e) => handleUpdatePurchaseStatus(
+                                                feast.id,
+                                                ing.name,
+                                                'replaced',
+                                                undefined,
+                                                {
+                                                  name: e.target.value,
+                                                  amount: ing.replacement?.amount || ing.amount,
+                                                  unit: ing.replacement?.unit || ing.unit,
+                                                  note: ing.replacement?.note,
+                                                }
+                                              )}
+                                              placeholder="食材名称"
+                                              className="col-span-2 px-2 py-1.5 text-xs rounded-lg border border-amber-200 bg-white outline-none focus:border-amber-400"
+                                            />
+                                            <div className="flex gap-1">
+                                              <input
+                                                type="number"
+                                                value={ing.replacement?.amount || ''}
+                                                onChange={(e) => handleUpdatePurchaseStatus(
+                                                  feast.id,
+                                                  ing.name,
+                                                  'replaced',
+                                                  undefined,
+                                                  {
+                                                    name: ing.replacement?.name || '',
+                                                    amount: Number(e.target.value),
+                                                    unit: ing.replacement?.unit || ing.unit,
+                                                    note: ing.replacement?.note,
+                                                  }
+                                                )}
+                                                placeholder="数量"
+                                                className="w-full px-2 py-1.5 text-xs rounded-lg border border-amber-200 bg-white outline-none focus:border-amber-400"
+                                              />
+                                            </div>
+                                          </div>
+                                          <input
+                                            type="text"
+                                            value={ing.replacement?.unit || ''}
+                                            onChange={(e) => handleUpdatePurchaseStatus(
+                                              feast.id,
+                                              ing.name,
+                                              'replaced',
+                                              undefined,
+                                              {
+                                                name: ing.replacement?.name || '',
+                                                amount: ing.replacement?.amount || ing.amount,
+                                                unit: e.target.value,
+                                                note: ing.replacement?.note,
+                                              }
+                                            )}
+                                            placeholder="单位"
+                                            className="w-full px-2 py-1.5 text-xs rounded-lg border border-amber-200 bg-white outline-none focus:border-amber-400"
+                                          />
+                                          <input
+                                            type="text"
+                                            value={ing.replacement?.note || ''}
+                                            onChange={(e) => handleUpdatePurchaseStatus(
+                                              feast.id,
+                                              ing.name,
+                                              'replaced',
+                                              undefined,
+                                              {
+                                                name: ing.replacement?.name || '',
+                                                amount: ing.replacement?.amount || ing.amount,
+                                                unit: ing.replacement?.unit || ing.unit,
+                                                note: e.target.value,
+                                              }
+                                            )}
+                                            placeholder="备注说明（可选）"
+                                            className="w-full px-2 py-1.5 text-xs rounded-lg border border-amber-200 bg-white outline-none focus:border-amber-400"
+                                          />
+                                        </div>
+                                      )}
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </div>
                           );

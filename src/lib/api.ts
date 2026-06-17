@@ -12,6 +12,11 @@ import type {
   MemberCompletion,
   Ingredient,
   FeastTask,
+  PurchaseStatus,
+  ReplacementIngredient,
+  PurchaseStats,
+  FeastPurchaseOverview,
+  CalculatedIngredient,
 } from '../types';
 
 const API_BASE = '/api';
@@ -127,6 +132,35 @@ export const feastApi = {
   deleteTask: (feastId: string, taskId: string) =>
     request<FeastTask[]>(`/feasts/${feastId}/tasks/${taskId}`, { method: 'DELETE' }),
   delete: (id: string) => request<void>(`/feasts/${id}`, { method: 'DELETE' }),
+  updateIngredientPurchaseStatus: (
+    feastId: string,
+    ingredientName: string,
+    data: {
+      status: PurchaseStatus;
+      outOfStockNote?: string;
+      replacement?: ReplacementIngredient;
+    }
+  ) =>
+    request<CalculatedIngredient>(
+      `/feasts/${feastId}/ingredients/${encodeURIComponent(ingredientName)}/purchase-status`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    ),
+  batchUpdateIngredients: (
+    feastId: string,
+    updates: Array<{
+      name: string;
+      status?: PurchaseStatus;
+      outOfStockNote?: string;
+      replacement?: ReplacementIngredient;
+    }>
+  ) =>
+    request<CalculatedIngredient[]>(`/feasts/${feastId}/ingredients/batch-update`, {
+      method: 'PUT',
+      body: JSON.stringify({ updates }),
+    }),
 };
 
 export const reviewApi = {
@@ -162,4 +196,6 @@ export const statsApi = {
   getTimeDistribution: () => request<TimeDistributionItem[]>('/stats/time-distribution'),
   getErrorProne: () => request<ErrorProneItem[]>('/stats/error-prone'),
   getMemberCompletion: () => request<MemberCompletion[]>('/stats/member-completion'),
+  getPurchaseStats: () => request<PurchaseStats>('/stats/purchase-stats'),
+  getPurchaseOverview: () => request<FeastPurchaseOverview[]>('/stats/purchase-overview'),
 };

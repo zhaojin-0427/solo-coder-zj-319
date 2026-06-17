@@ -7,6 +7,8 @@ import type {
   ErrorProneItem,
   MemberCompletion,
   StepType,
+  PurchaseStats,
+  FeastPurchaseOverview,
 } from '../types/index.js';
 
 const router = Router();
@@ -160,6 +162,106 @@ router.get('/member-completion', async (_req: Request, res: Response): Promise<v
     res.json({ success: true, data: memberCompletion });
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to get member completion' });
+  }
+});
+
+router.get('/purchase-stats', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const feasts = dataStore.getFeasts();
+    let totalIngredients = 0;
+    let purchasedCount = 0;
+    let pendingCount = 0;
+    let outOfStockCount = 0;
+    let replacedCount = 0;
+
+    for (const feast of feasts) {
+      for (const ing of feast.ingredients) {
+        totalIngredients += 1;
+        switch (ing.purchaseStatus) {
+          case 'purchased':
+            purchasedCount += 1;
+            break;
+          case 'pending':
+            pendingCount += 1;
+            break;
+          case 'out-of-stock':
+            outOfStockCount += 1;
+            break;
+          case 'replaced':
+            replacedCount += 1;
+            break;
+          default:
+            pendingCount += 1;
+        }
+      }
+    }
+
+    const purchaseStats: PurchaseStats = {
+      totalIngredients,
+      purchasedCount,
+      pendingCount,
+      outOfStockCount,
+      replacedCount,
+      purchaseCompletionRate: totalIngredients > 0 ? Math.round((purchasedCount / totalIngredients) * 100) : 0,
+      outOfStockRate: totalIngredients > 0 ? Math.round((outOfStockCount / totalIngredients) * 100) : 0,
+      replacementRate: totalIngredients > 0 ? Math.round((replacedCount / totalIngredients) * 100) : 0,
+    };
+
+    res.json({ success: true, data: purchaseStats });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to get purchase stats' });
+  }
+});
+
+router.get('/purchase-overview', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const feasts = dataStore.getFeasts();
+    const sortedFeasts = [...feasts].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    const overview: FeastPurchaseOverview[] = sortedFeasts.slice(0, 5).map((feast) => {
+      let purchased = 0;
+      let pending = 0;
+      let outOfStock = 0;
+      let replaced = 0;
+      const total = feast.ingredients.length;
+
+      for (const ing of feast.ingredients) {
+        switch (ing.purchaseStatus) {
+          case 'purchased':
+            purchased += 1;
+            break;
+          case 'pending':
+            pending += 1;
+            break;
+          case 'out-of-stock':
+            outOfStock += 1;
+            break;
+          case 'replaced':
+            replaced += 1;
+            break;
+          default:
+            pending += 1;
+        }
+      }
+
+      return {
+        feastId: feast.id,
+        feastName: feast.name,
+        feastDate: feast.date,
+        totalIngredients: total,
+        purchasedCount: purchased,
+        pendingCount: pending,
+        outOfStockCount: outOfStock,
+        replacedCount: replaced,
+        completionRate: total > 0 ? Math.round((purchased / total) * 100) : 0,
+      };
+    });
+
+    res.json({ success: true, data: overview });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to get purchase overview' });
   }
 });
 

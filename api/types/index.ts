@@ -1,11 +1,20 @@
 export type IngredientCategory = 'main' | 'seasoning' | 'side';
 
+export type PurchaseStatus = 'pending' | 'purchased' | 'out-of-stock' | 'replaced';
+
 export interface Ingredient {
   id: string;
   name: string;
   amount: number;
   unit: string;
   category: IngredientCategory;
+}
+
+export interface ReplacementIngredient {
+  name: string;
+  amount: number;
+  unit: string;
+  note?: string;
 }
 
 export type HeatLevel = 'low' | 'medium' | 'high' | 'none';
@@ -72,6 +81,10 @@ export interface CalculatedIngredient {
   unit: string;
   category: string;
   sourceRecipes: string[];
+  purchaseStatus: PurchaseStatus;
+  outOfStockNote?: string;
+  replacement?: ReplacementIngredient;
+  purchasedAt?: string;
 }
 
 export interface Feast {
@@ -127,4 +140,27 @@ export interface MemberCompletion {
   completionRate: number;
   totalTasks: number;
   completedTasks: number;
+}
+
+export interface PurchaseStats {
+  totalIngredients: number;
+  purchasedCount: number;
+  pendingCount: number;
+  outOfStockCount: number;
+  replacedCount: number;
+  purchaseCompletionRate: number;
+  outOfStockRate: number;
+  replacementRate: number;
+}
+
+export interface FeastPurchaseOverview {
+  feastId: string;
+  feastName: string;
+  feastDate: string;
+  totalIngredients: number;
+  purchasedCount: number;
+  pendingCount: number;
+  outOfStockCount: number;
+  replacedCount: number;
+  completionRate: number;
 }

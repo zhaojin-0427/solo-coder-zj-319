@@ -374,11 +374,11 @@ export const initialFeasts: Feast[] = [
     status: 'completed',
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     ingredients: [
-      { name: '五花肉', amount: 1000, unit: '克', category: 'main', sourceRecipes: ['奶奶的红烧肉'] },
-      { name: '猪肋排', amount: 1500, unit: '克', category: 'main', sourceRecipes: ['妈妈的糖醋排骨'] },
-      { name: '黄瓜', amount: 6, unit: '根', category: 'main', sourceRecipes: ['爸爸的凉拌黄瓜'] },
-      { name: '番茄', amount: 6, unit: '个', category: 'main', sourceRecipes: ['外婆的番茄炒蛋'] },
-      { name: '鸡蛋', amount: 9, unit: '个', category: 'main', sourceRecipes: ['外婆的番茄炒蛋'] },
+      { name: '五花肉', amount: 1000, unit: '克', category: 'main', sourceRecipes: ['奶奶的红烧肉'], purchaseStatus: 'purchased', purchasedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+      { name: '猪肋排', amount: 1500, unit: '克', category: 'main', sourceRecipes: ['妈妈的糖醋排骨'], purchaseStatus: 'purchased', purchasedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+      { name: '黄瓜', amount: 6, unit: '根', category: 'main', sourceRecipes: ['爸爸的凉拌黄瓜'], purchaseStatus: 'purchased', purchasedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+      { name: '番茄', amount: 6, unit: '个', category: 'main', sourceRecipes: ['外婆的番茄炒蛋'], purchaseStatus: 'out-of-stock', outOfStockNote: '菜市场卖完了' },
+      { name: '鸡蛋', amount: 9, unit: '个', category: 'main', sourceRecipes: ['外婆的番茄炒蛋'], purchaseStatus: 'replaced', replacement: { name: '鸭蛋', amount: 9, unit: '个', note: '用鸭蛋替代，口感更丰富' } },
     ],
     tasks: [
       { id: 't1', type: 'wash-cut', description: '五花肉切块、排骨焯水', recipeId: 'r1', recipeName: '奶奶的红烧肉', stepId: 's1', assignedMemberId: 'm3', completed: true },
@@ -402,8 +402,8 @@ export const initialFeasts: Feast[] = [
     status: 'completed',
     createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
     ingredients: [
-      { name: '五花肉', amount: 1333, unit: '克', category: 'main', sourceRecipes: ['奶奶的红烧肉'] },
-      { name: '鲈鱼', amount: 3, unit: '条', category: 'main', sourceRecipes: ['清蒸鲈鱼'] },
+      { name: '五花肉', amount: 1333, unit: '克', category: 'main', sourceRecipes: ['奶奶的红烧肉'], purchaseStatus: 'purchased' },
+      { name: '鲈鱼', amount: 3, unit: '条', category: 'main', sourceRecipes: ['清蒸鲈鱼'], purchaseStatus: 'purchased' },
     ],
     tasks: [
       { id: 't11', type: 'wash-cut', description: '处理所有食材', assignedMemberId: 'm2', completed: true },

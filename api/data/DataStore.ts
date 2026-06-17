@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import type { Recipe, Member, Feast, Review } from '../types/index.js';
+import type { Recipe, Member, Feast, Review, CalculatedIngredient, PurchaseStatus } from '../types/index.js';
 import { initialRecipes, initialMembers, initialFeasts, initialReviews } from './initialData.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,11 +30,38 @@ class DataStore {
     }
   }
 
+  private migrateData(data: DataStoreData): DataStoreData {
+    const migratedFeasts = data.feasts.map((feast) => {
+      const migratedIngredients = feast.ingredients.map((ing) => {
+        if (!ing.purchaseStatus) {
+          return {
+            ...ing,
+            purchaseStatus: 'pending' as PurchaseStatus,
+          };
+        }
+        return ing;
+      });
+      return {
+        ...feast,
+        ingredients: migratedIngredients as CalculatedIngredient[],
+      };
+    });
+    return {
+      ...data,
+      feasts: migratedFeasts,
+    };
+  }
+
   private loadData(): DataStoreData {
     try {
       if (fs.existsSync(this.dataFile)) {
         const raw = fs.readFileSync(this.dataFile, 'utf-8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        const migrated = this.migrateData(parsed);
+        if (JSON.stringify(migrated) !== JSON.stringify(parsed)) {
+          this.saveData(migrated);
+        }
+        return migrated;
       }
     } catch (e) {
       console.error('Failed to load data, using initial data:', e);

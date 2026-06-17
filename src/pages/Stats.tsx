@@ -8,6 +8,10 @@ import {
   ChefHat,
   Award,
   CheckCircle2,
+  ShoppingCart,
+  Package,
+  XCircle,
+  RefreshCw,
 } from 'lucide-react';
 import {
   BarChart,
@@ -33,6 +37,7 @@ import type {
   TimeDistributionItem,
   ErrorProneItem,
   MemberCompletion,
+  PurchaseStats,
 } from '@/types';
 
 const COLORS = ['#f97316', '#f43f5e', '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#14b8a6'];
@@ -43,6 +48,7 @@ export default function Stats() {
   const [timeDistribution, setTimeDistribution] = useState<TimeDistributionItem[]>([]);
   const [errorProne, setErrorProne] = useState<ErrorProneItem[]>([]);
   const [memberCompletion, setMemberCompletion] = useState<MemberCompletion[]>([]);
+  const [purchaseStats, setPurchaseStats] = useState<PurchaseStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,12 +58,14 @@ export default function Stats() {
       statsApi.getTimeDistribution(),
       statsApi.getErrorProne(),
       statsApi.getMemberCompletion(),
-    ]).then(([o, p, t, e, m]) => {
+      statsApi.getPurchaseStats(),
+    ]).then(([o, p, t, e, m, ps]) => {
       setOverview(o);
       setPopularDishes(p);
       setTimeDistribution(t);
       setErrorProne(e);
       setMemberCompletion(m);
+      setPurchaseStats(ps);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -103,6 +111,22 @@ export default function Stats() {
       bg: 'bg-blue-50',
       iconColor: 'text-blue-500',
     },
+    {
+      label: '采购完成率',
+      value: `${purchaseStats?.purchaseCompletionRate || 0}%`,
+      icon: ShoppingCart,
+      gradient: 'from-blue-500 to-cyan-500',
+      bg: 'bg-blue-50',
+      iconColor: 'text-blue-500',
+    },
+    {
+      label: '缺货替代次数',
+      value: (purchaseStats?.outOfStockCount || 0) + (purchaseStats?.replacedCount || 0),
+      icon: AlertTriangle,
+      gradient: 'from-amber-500 to-orange-500',
+      bg: 'bg-amber-50',
+      iconColor: 'text-amber-500',
+    },
   ];
 
   const pieData = timeDistribution.map((d) => ({
@@ -116,6 +140,15 @@ export default function Stats() {
     任务数: m.totalTasks,
   }));
 
+  const purchaseStatusData = purchaseStats
+    ? [
+        { name: '已采购', value: purchaseStats.purchasedCount, color: '#10b981' },
+        { name: '待采购', value: purchaseStats.pendingCount, color: '#94a3b8' },
+        { name: '已缺货', value: purchaseStats.outOfStockCount, color: '#ef4444' },
+        { name: '已替代', value: purchaseStats.replacedCount, color: '#f59e0b' },
+      ].filter((d) => d.value > 0)
+    : [];
+
   return (
     <div className="space-y-6">
       <div>
@@ -126,7 +159,7 @@ export default function Stats() {
         <p className="text-sm text-stone-500 mt-1">高频家宴菜、步骤耗时、易出错环节、成员协作完成率</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
@@ -335,6 +368,114 @@ export default function Stats() {
                 <span className="text-xs font-bold text-emerald-600 w-10 text-right">{m.completionRate}%</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+          <div className="flex items-center gap-2 mb-5">
+            <ShoppingCart className="w-5 h-5 text-blue-500" />
+            <h3 className="font-bold text-stone-800">食材采购状态分布</h3>
+          </div>
+          {purchaseStatusData.length > 0 ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={purchaseStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={95}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {purchaseStatusData.map((entry, idx) => (
+                      <Cell key={idx} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                      fontSize: '13px',
+                    }}
+                    formatter={(value: number) => [`${value} 种`, '食材数量']}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState icon={ShoppingCart} text="暂无采购数据" />
+          )}
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span className="text-stone-600">已采购</span>
+              <span className="ml-auto font-semibold text-stone-800">{purchaseStats?.purchasedCount || 0}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-3 h-3 rounded-full bg-stone-400"></span>
+              <span className="text-stone-600">待采购</span>
+              <span className="ml-auto font-semibold text-stone-800">{purchaseStats?.pendingCount || 0}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-3 h-3 rounded-full bg-red-500"></span>
+              <span className="text-stone-600">已缺货</span>
+              <span className="ml-auto font-semibold text-stone-800">{purchaseStats?.outOfStockCount || 0}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+              <span className="text-stone-600">已替代</span>
+              <span className="ml-auto font-semibold text-stone-800">{purchaseStats?.replacedCount || 0}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+          <div className="flex items-center gap-2 mb-5">
+            <BarChart3 className="w-5 h-5 text-indigo-500" />
+            <h3 className="font-bold text-stone-800">采购指标概览</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span className="text-sm text-emerald-700 font-medium">采购完成率</span>
+              </div>
+              <div className="text-2xl font-bold text-emerald-700">{purchaseStats?.purchaseCompletionRate || 0}%</div>
+              <div className="text-xs text-emerald-600 mt-1">
+                {purchaseStats?.purchasedCount || 0} / {purchaseStats?.totalIngredients || 0} 种食材
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-stone-50 border border-stone-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-4 h-4 text-stone-500" />
+                <span className="text-sm text-stone-700 font-medium">待采购数</span>
+              </div>
+              <div className="text-2xl font-bold text-stone-700">{purchaseStats?.pendingCount || 0}</div>
+              <div className="text-xs text-stone-500 mt-1">待采购食材种类</div>
+            </div>
+            <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+              <div className="flex items-center gap-2 mb-2">
+                <XCircle className="w-4 h-4 text-red-500" />
+                <span className="text-sm text-red-700 font-medium">缺货率</span>
+              </div>
+              <div className="text-2xl font-bold text-red-700">{purchaseStats?.outOfStockRate || 0}%</div>
+              <div className="text-xs text-red-600 mt-1">
+                {purchaseStats?.outOfStockCount || 0} 种食材缺货
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+              <div className="flex items-center gap-2 mb-2">
+                <RefreshCw className="w-4 h-4 text-amber-500" />
+                <span className="text-sm text-amber-700 font-medium">替代率</span>
+              </div>
+              <div className="text-2xl font-bold text-amber-700">{purchaseStats?.replacementRate || 0}%</div>
+              <div className="text-xs text-amber-600 mt-1">
+                {purchaseStats?.replacedCount || 0} 种食材已替代
+              </div>
+            </div>
           </div>
         </div>
       </div>
