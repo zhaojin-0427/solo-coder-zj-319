@@ -20,6 +20,16 @@ export interface ReplacementIngredient {
 export type HeatLevel = 'low' | 'medium' | 'high' | 'none';
 export type StepType = 'wash-cut' | 'prep' | 'cooking' | 'plating';
 
+export type KitchenEquipment =
+  | 'gas-stove'
+  | 'wok'
+  | 'steamer'
+  | 'oven'
+  | 'rice-cooker'
+  | 'cutting-board'
+  | 'pot'
+  | 'none';
+
 export interface StepCard {
   id: string;
   recipeId: string;
@@ -32,6 +42,8 @@ export interface StepCard {
   commonMistakes: string[];
   tips: string;
   ingredientIds: string[];
+  equipment?: KitchenEquipment;
+  parallel?: boolean;
 }
 
 export interface Recipe {
@@ -45,6 +57,8 @@ export interface Recipe {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  latestReadyTime?: string;
+  keepWarmDuration?: number;
 }
 
 export interface ParsedRecipe {
@@ -87,6 +101,44 @@ export interface CalculatedIngredient {
   purchasedAt?: string;
 }
 
+export type ScheduleConflictType = 'equipment' | 'member' | 'keep-warm' | 'too-late';
+
+export interface ScheduleItem {
+  id: string;
+  taskId: string;
+  stepId?: string;
+  recipeId?: string;
+  recipeName?: string;
+  stepTitle: string;
+  stepOrder: number;
+  type: TaskType;
+  memberId?: string;
+  memberName?: string;
+  equipment?: KitchenEquipment;
+  duration: number;
+  startTime: string;
+  endTime: string;
+  locked: boolean;
+  parallel: boolean;
+}
+
+export interface ScheduleConflict {
+  id: string;
+  type: ScheduleConflictType;
+  severity: 'error' | 'warning';
+  message: string;
+  itemIds: string[];
+}
+
+export interface CookingSchedule {
+  feastId: string;
+  mealTime: string;
+  items: ScheduleItem[];
+  conflicts: ScheduleConflict[];
+  generatedAt: string;
+  updatedAt: string;
+}
+
 export interface Feast {
   id: string;
   name: string;
@@ -97,6 +149,7 @@ export interface Feast {
   tasks: FeastTask[];
   status: FeastStatus;
   createdAt: string;
+  schedule?: CookingSchedule;
 }
 
 export interface Review {
@@ -163,4 +216,38 @@ export interface FeastPurchaseOverview {
   outOfStockCount: number;
   replacedCount: number;
   completionRate: number;
+}
+
+export interface EquipmentUsageItem {
+  equipment: KitchenEquipment;
+  label: string;
+  count: number;
+  totalMinutes: number;
+}
+
+export interface ScheduleSummary {
+  totalSchedules: number;
+  totalItems: number;
+  totalConflicts: number;
+  avgConflicts: number;
+  avgItems: number;
+}
+
+export interface MemberScheduleLoad {
+  memberId: string;
+  name: string;
+  totalMinutes: number;
+  itemCount: number;
+}
+
+export interface ScheduleOverview {
+  feastId: string;
+  feastName: string;
+  feastDate: string;
+  mealTime: string;
+  itemCount: number;
+  conflictCount: number;
+  earliestStart: string;
+  memberCount: number;
+  updatedAt: string;
 }

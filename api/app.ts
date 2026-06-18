@@ -18,6 +18,7 @@ import memberRoutes from './routes/members.js'
 import feastRoutes from './routes/feasts.js'
 import reviewRoutes from './routes/reviews.js'
 import statsRoutes from './routes/stats.js'
+import scheduleRoutes from './routes/schedules.js'
 
 // for esm mode
 const __filename = fileURLToPath(import.meta.url)
@@ -42,6 +43,7 @@ app.use('/api/members', memberRoutes)
 app.use('/api/feasts', feastRoutes)
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/stats', statsRoutes)
+app.use('/api/schedules', scheduleRoutes)
 
 /**
  * health

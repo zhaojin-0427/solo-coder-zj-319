@@ -18,8 +18,10 @@ import {
   ArrowLeftRight,
   Clock,
   Package,
+  CookingPot,
 } from 'lucide-react';
 import { feastApi, recipeApi, memberApi } from '@/lib/api';
+import FeastSchedulePanel from '@/components/FeastSchedulePanel';
 import type {
   Feast,
   Recipe,
@@ -104,6 +106,7 @@ export default function Feasts() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
+  const [feastTab, setFeastTab] = useState<'plan' | 'schedule'>('plan');
 
   const [feastName, setFeastName] = useState('');
   const [feastDate, setFeastDate] = useState(new Date().toISOString().split('T')[0]);
@@ -406,6 +409,36 @@ export default function Feasts() {
                       </button>
                     </div>
 
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setFeastTab('plan')}
+                        className={clsx(
+                          'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                          feastTab === 'plan' ? 'bg-rose-500 text-white' : 'bg-white text-stone-600 hover:bg-stone-100'
+                        )}
+                      >
+                        食材与采购分工
+                      </button>
+                      <button
+                        onClick={() => setFeastTab('schedule')}
+                        className={clsx(
+                          'inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                          feastTab === 'schedule' ? 'bg-rose-500 text-white' : 'bg-white text-stone-600 hover:bg-stone-100'
+                        )}
+                      >
+                        <CookingPot className="w-3.5 h-3.5" />
+                        烹饪排程
+                      </button>
+                      {feast.schedule && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                          已排程
+                        </span>
+                      )}
+                    </div>
+
+                    {feastTab === 'schedule' ? (
+                      <FeastSchedulePanel feast={feast} recipes={recipes} members={members} onSaved={fetchData} />
+                    ) : (
                     <div className="grid lg:grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
@@ -691,6 +724,7 @@ export default function Feasts() {
                         )}
                       </div>
                     </div>
+                    )}
                   </div>
                 )}
               </div>

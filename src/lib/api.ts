@@ -17,6 +17,13 @@ import type {
   PurchaseStats,
   FeastPurchaseOverview,
   CalculatedIngredient,
+  CookingSchedule,
+  ScheduleItem,
+  ScheduleConflict,
+  ScheduleOverview,
+  EquipmentUsageItem,
+  ScheduleSummary,
+  MemberScheduleLoad,
 } from '../types';
 
 const API_BASE = '/api';
@@ -190,6 +197,36 @@ export const reviewApi = {
     }),
 };
 
+export const scheduleApi = {
+  generate: (feastId: string, mealTime?: string) =>
+    request<CookingSchedule>(`/schedules/${feastId}/generate`, {
+      method: 'POST',
+      body: JSON.stringify({ mealTime }),
+    }),
+  save: (
+    feastId: string,
+    data: { mealTime: string; items: ScheduleItem[] }
+  ) =>
+    request<CookingSchedule>(`/schedules/${feastId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  recalculate: (feastId: string, items: ScheduleItem[]) =>
+    request<CookingSchedule>(`/schedules/${feastId}/recalculate`, {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    }),
+  detectConflicts: (
+    feastId: string,
+    data: { items: ScheduleItem[]; mealTime: string }
+  ) =>
+    request<ScheduleConflict[]>(`/schedules/${feastId}/conflicts`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  getRecent: () => request<ScheduleOverview[]>('/schedules/recent'),
+};
+
 export const statsApi = {
   getOverview: () => request<StatsOverview>('/stats/overview'),
   getPopularDishes: () => request<PopularDish[]>('/stats/popular-dishes'),
@@ -198,4 +235,7 @@ export const statsApi = {
   getMemberCompletion: () => request<MemberCompletion[]>('/stats/member-completion'),
   getPurchaseStats: () => request<PurchaseStats>('/stats/purchase-stats'),
   getPurchaseOverview: () => request<FeastPurchaseOverview[]>('/stats/purchase-overview'),
+  getEquipmentUsage: () => request<EquipmentUsageItem[]>('/stats/equipment-usage'),
+  getScheduleSummary: () => request<ScheduleSummary>('/stats/schedule-summary'),
+  getMemberScheduleLoad: () => request<MemberScheduleLoad[]>('/stats/member-schedule-load'),
 };

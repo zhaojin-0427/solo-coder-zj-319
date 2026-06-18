@@ -12,6 +12,10 @@ import {
   Package,
   XCircle,
   RefreshCw,
+  UtensilsCrossed,
+  CookingPot,
+  Timer,
+  AlertOctagon,
 } from 'lucide-react';
 import {
   BarChart,
@@ -38,6 +42,9 @@ import type {
   ErrorProneItem,
   MemberCompletion,
   PurchaseStats,
+  EquipmentUsageItem,
+  ScheduleSummary,
+  MemberScheduleLoad,
 } from '@/types';
 
 const COLORS = ['#f97316', '#f43f5e', '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#14b8a6'];
@@ -49,6 +56,9 @@ export default function Stats() {
   const [errorProne, setErrorProne] = useState<ErrorProneItem[]>([]);
   const [memberCompletion, setMemberCompletion] = useState<MemberCompletion[]>([]);
   const [purchaseStats, setPurchaseStats] = useState<PurchaseStats | null>(null);
+  const [equipmentUsage, setEquipmentUsage] = useState<EquipmentUsageItem[]>([]);
+  const [scheduleSummary, setScheduleSummary] = useState<ScheduleSummary | null>(null);
+  const [memberLoad, setMemberLoad] = useState<MemberScheduleLoad[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,13 +69,19 @@ export default function Stats() {
       statsApi.getErrorProne(),
       statsApi.getMemberCompletion(),
       statsApi.getPurchaseStats(),
-    ]).then(([o, p, t, e, m, ps]) => {
+      statsApi.getEquipmentUsage().catch(() => []),
+      statsApi.getScheduleSummary().catch(() => null),
+      statsApi.getMemberScheduleLoad().catch(() => []),
+    ]).then(([o, p, t, e, m, ps, eu, ss, ml]) => {
       setOverview(o);
       setPopularDishes(p);
       setTimeDistribution(t);
       setErrorProne(e);
       setMemberCompletion(m);
       setPurchaseStats(ps);
+      setEquipmentUsage(eu);
+      setScheduleSummary(ss);
+      setMemberLoad(ml);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -475,6 +491,131 @@ export default function Stats() {
               <div className="text-xs text-amber-600 mt-1">
                 {purchaseStats?.replacedCount || 0} 种食材已替代
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+          <div className="flex items-center gap-2 mb-5">
+            <UtensilsCrossed className="w-5 h-5 text-purple-500" />
+            <h3 className="font-bold text-stone-800">厨房设备使用频率</h3>
+          </div>
+          {equipmentUsage.length > 0 ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={equipmentUsage} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 12, fill: '#94a3b8' }} allowDecimals={false} />
+                  <YAxis
+                    type="category"
+                    dataKey="label"
+                    tick={{ fontSize: 12, fill: '#475569' }}
+                    width={70}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                      fontSize: '13px',
+                    }}
+                    formatter={(value: number, _name, props) => [
+                      `${value} 次 · ${props.payload.totalMinutes} 分钟`,
+                      '使用情况',
+                    ]}
+                  />
+                  <Bar dataKey="count" radius={[0, 8, 8, 0]}>
+                    {equipmentUsage.map((_, idx) => (
+                      <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState icon={UtensilsCrossed} text="暂无排程数据，先生成烹饪排程" />
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+          <div className="flex items-center gap-2 mb-5">
+            <Timer className="w-5 h-5 text-rose-500" />
+            <h3 className="font-bold text-stone-800">按成员统计的排程负载时长</h3>
+          </div>
+          {memberLoad.some((m) => m.totalMinutes > 0) ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={memberLoad} margin={{ bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: '#64748b' }}
+                    interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                    height={50}
+                  />
+                  <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} allowDecimals={false} unit="分" />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                      fontSize: '13px',
+                    }}
+                    formatter={(value: number, _name, props) => [
+                      `${value} 分钟 · ${props.payload.itemCount} 步`,
+                      '排程负载',
+                    ]}
+                  />
+                  <Bar dataKey="totalMinutes" radius={[6, 6, 0, 0]} fill="#f43f5e" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState icon={Users} text="暂无排程数据" />
+          )}
+        </div>
+
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+          <div className="flex items-center gap-2 mb-5">
+            <CookingPot className="w-5 h-5 text-orange-500" />
+            <h3 className="font-bold text-stone-800">烹饪排程概览</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl bg-orange-50 border border-orange-100">
+              <div className="flex items-center gap-2 mb-2">
+                <CookingPot className="w-4 h-4 text-orange-500" />
+                <span className="text-sm text-orange-700 font-medium">排程家宴数</span>
+              </div>
+              <div className="text-2xl font-bold text-orange-700">{scheduleSummary?.totalSchedules || 0}</div>
+              <div className="text-xs text-orange-600 mt-1">已生成排程的家宴</div>
+            </div>
+            <div className="p-4 rounded-xl bg-stone-50 border border-stone-200">
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="w-4 h-4 text-stone-500" />
+                <span className="text-sm text-stone-700 font-medium">平均步骤数</span>
+              </div>
+              <div className="text-2xl font-bold text-stone-700">{scheduleSummary?.avgItems || 0}</div>
+              <div className="text-xs text-stone-500 mt-1">每场家宴平均步骤</div>
+            </div>
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                <span className="text-sm text-amber-700 font-medium">平均冲突数</span>
+              </div>
+              <div className="text-2xl font-bold text-amber-700">{scheduleSummary?.avgConflicts || 0}</div>
+              <div className="text-xs text-amber-600 mt-1">每场家宴平均冲突</div>
+            </div>
+            <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertOctagon className="w-4 h-4 text-red-500" />
+                <span className="text-sm text-red-700 font-medium">冲突总数</span>
+              </div>
+              <div className="text-2xl font-bold text-red-700">{scheduleSummary?.totalConflicts || 0}</div>
+              <div className="text-xs text-red-600 mt-1">所有排程冲突合计</div>
             </div>
           </div>
         </div>

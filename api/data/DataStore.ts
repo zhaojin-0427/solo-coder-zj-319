@@ -1,12 +1,28 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import type { Recipe, Member, Feast, Review, CalculatedIngredient, PurchaseStatus } from '../types/index.js';
+import type { Recipe, Member, Feast, Review, CalculatedIngredient, PurchaseStatus, KitchenEquipment, StepType } from '../types/index.js';
 import { initialRecipes, initialMembers, initialFeasts, initialReviews } from './initialData.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+
+function inferEquipment(type: StepType, title: string, description: string): KitchenEquipment {
+  const text = `${title || ''} ${description || ''}`;
+  if (/蒸/.test(text)) return 'steamer';
+  if (/烤箱|烤鸡|烤肉|烤/.test(text)) return 'oven';
+  if (/电饭煲|煮饭|蒸饭/.test(text)) return 'rice-cooker';
+  if (type === 'wash-cut' || type === 'prep') {
+    if (/切|拍|剁|改刀|处理|备料|调|腌|剥|削|拍碎|切块/.test(text)) return 'cutting-board';
+    return 'none';
+  }
+  if (/炒|煎|爆|煸|划散/.test(text)) return 'wok';
+  if (/炖|煮|焖|烧|熬|卤|煲|红烧|收汁|糖醋/.test(text)) return 'pot';
+  if (type === 'plating') return 'none';
+  if (type === 'cooking') return 'wok';
+  return 'none';
+}
 
 interface DataStoreData {
   recipes: Recipe[];
@@ -46,8 +62,22 @@ class DataStore {
         ingredients: migratedIngredients as CalculatedIngredient[],
       };
     });
+
+    const migratedRecipes = (data.recipes || []).map((recipe) => {
+      const steps = (recipe.steps || []).map((step) => ({
+        ...step,
+        equipment: (step.equipment ?? inferEquipment(step.type, step.title, step.description)) as KitchenEquipment,
+        parallel: step.parallel ?? false,
+      }));
+      const hasCooking = steps.some((s) => s.type === 'cooking');
+      const keepWarmDuration =
+        recipe.keepWarmDuration ?? (hasCooking ? 30 : undefined);
+      return { ...recipe, steps, keepWarmDuration };
+    });
+
     return {
       ...data,
+      recipes: migratedRecipes,
       feasts: migratedFeasts,
     };
   }
@@ -72,8 +102,9 @@ class DataStore {
       feasts: initialFeasts,
       reviews: initialReviews,
     };
-    this.saveData(initialData);
-    return initialData;
+    const migratedInitial = this.migrateData(initialData);
+    this.saveData(migratedInitial);
+    return migratedInitial;
   }
 
   private saveData(data: DataStoreData): void {

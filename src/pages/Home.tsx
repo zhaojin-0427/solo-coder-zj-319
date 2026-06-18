@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { ChefHat, Users, ClipboardList, MessageSquare, ChevronRight, Sparkles, Clock, AlertCircle, ShoppingCart, AlertTriangle } from 'lucide-react';
-import { statsApi, recipeApi, feastApi } from '@/lib/api';
-import type { StatsOverview, Recipe, Feast, FeastPurchaseOverview } from '@/types';
+import { ChefHat, Users, ClipboardList, MessageSquare, ChevronRight, Sparkles, Clock, AlertCircle, ShoppingCart, CalendarClock, CookingPot } from 'lucide-react';
+import { statsApi, recipeApi, feastApi, scheduleApi } from '@/lib/api';
+import type { StatsOverview, Recipe, Feast, FeastPurchaseOverview, ScheduleOverview } from '@/types';
 
 export default function Home() {
   const [overview, setOverview] = useState<StatsOverview | null>(null);
   const [recentRecipes, setRecentRecipes] = useState<Recipe[]>([]);
   const [recentFeasts, setRecentFeasts] = useState<Feast[]>([]);
   const [purchaseOverview, setPurchaseOverview] = useState<FeastPurchaseOverview[]>([]);
+  const [recentSchedules, setRecentSchedules] = useState<ScheduleOverview[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,11 +17,13 @@ export default function Home() {
       recipeApi.getAll(),
       feastApi.getAll(),
       statsApi.getPurchaseOverview(),
-    ]).then(([overview, recipes, feasts, purchase]) => {
+      scheduleApi.getRecent().catch(() => []),
+    ]).then(([overview, recipes, feasts, purchase, schedules]) => {
       setOverview(overview);
       setRecentRecipes(recipes.slice(0, 3));
       setRecentFeasts(feasts.slice(0, 3));
       setPurchaseOverview(purchase);
+      setRecentSchedules(schedules);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -205,6 +208,66 @@ export default function Home() {
           </div>
         </section>
       </div>
+
+      <section className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-lg font-bold text-stone-800 flex items-center gap-2">
+              <CookingPot className="w-5 h-5 text-rose-500" />
+              最近家宴排程概览
+            </h3>
+            <p className="text-sm text-stone-500 mt-1">已生成烹饪排程的家宴一览</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-stone-400" />
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {recentSchedules.map((s) => (
+            <div
+              key={s.feastId}
+              className="p-4 rounded-xl bg-gradient-to-br from-rose-50 to-transparent border border-rose-100 hover:border-rose-200 transition-colors"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h4 className="font-semibold text-stone-800 text-sm">{s.feastName}</h4>
+                  <p className="text-xs text-stone-500 mt-0.5 flex items-center gap-1">
+                    <CalendarClock className="w-3 h-3" />
+                    {s.feastDate} · 开饭 {s.mealTime}
+                  </p>
+                </div>
+                {s.conflictCount > 0 ? (
+                  <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+                    {s.conflictCount} 冲突
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    无冲突
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="text-center">
+                  <div className="font-bold text-stone-700">{s.itemCount}</div>
+                  <div className="text-stone-400">步骤</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-blue-600">{s.memberCount}</div>
+                  <div className="text-stone-400">成员</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-stone-700">{s.earliestStart}</div>
+                  <div className="text-stone-400">最早开工</div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {recentSchedules.length === 0 && (
+            <div className="col-span-full text-center py-8 text-stone-400">
+              <CookingPot className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">暂无排程，前往家宴分工页生成烹饪排程</p>
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
         <div className="flex items-center justify-between mb-5">

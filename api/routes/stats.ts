@@ -9,7 +9,12 @@ import type {
   StepType,
   PurchaseStats,
   FeastPurchaseOverview,
+  KitchenEquipment,
+  EquipmentUsageItem,
+  ScheduleSummary,
+  MemberScheduleLoad,
 } from '../types/index.js';
+import { EQUIPMENT_LABELS, EQUIPMENT_ORDER, parseTime } from '../services/scheduler.js';
 
 const router = Router();
 
@@ -262,6 +267,102 @@ router.get('/purchase-overview', async (_req: Request, res: Response): Promise<v
     res.json({ success: true, data: overview });
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to get purchase overview' });
+  }
+});
+
+router.get('/equipment-usage', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const feasts = dataStore.getFeasts().filter((f) => f.schedule);
+    const eqMap = new Map<KitchenEquipment, { count: number; totalMinutes: number }>();
+
+    for (const feast of feasts) {
+      for (const item of feast.schedule!.items) {
+        const eq = (item.equipment ?? 'none') as KitchenEquipment;
+        const start = parseTime(item.startTime) ?? 0;
+        const end = parseTime(item.endTime) ?? 0;
+        const existing = eqMap.get(eq) ?? { count: 0, totalMinutes: 0 };
+        existing.count += 1;
+        existing.totalMinutes += Math.max(0, end - start);
+        eqMap.set(eq, existing);
+      }
+    }
+
+    const result: EquipmentUsageItem[] = EQUIPMENT_ORDER.filter((eq) => eq !== 'none')
+      .map((eq) => {
+        const data = eqMap.get(eq) ?? { count: 0, totalMinutes: 0 };
+        return {
+          equipment: eq,
+          label: EQUIPMENT_LABELS[eq],
+          count: data.count,
+          totalMinutes: Math.round(data.totalMinutes),
+        };
+      })
+      .filter((d) => d.count > 0);
+
+    res.json({ success: true, data: result });
+  } catch {
+    res.status(500).json({ success: false, error: 'Failed to get equipment usage' });
+  }
+});
+
+router.get('/schedule-summary', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const feasts = dataStore.getFeasts().filter((f) => f.schedule);
+    const totalSchedules = feasts.length;
+    let totalItems = 0;
+    let totalConflicts = 0;
+
+    for (const feast of feasts) {
+      totalItems += feast.schedule!.items.length;
+      totalConflicts += feast.schedule!.conflicts.length;
+    }
+
+    const summary: ScheduleSummary = {
+      totalSchedules,
+      totalItems,
+      totalConflicts,
+      avgConflicts: totalSchedules > 0 ? Math.round((totalConflicts / totalSchedules) * 10) / 10 : 0,
+      avgItems: totalSchedules > 0 ? Math.round((totalItems / totalSchedules) * 10) / 10 : 0,
+    };
+
+    res.json({ success: true, data: summary });
+  } catch {
+    res.status(500).json({ success: false, error: 'Failed to get schedule summary' });
+  }
+});
+
+router.get('/member-schedule-load', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const feasts = dataStore.getFeasts().filter((f) => f.schedule);
+    const members = dataStore.getMembers();
+    const loadMap = new Map<string, { totalMinutes: number; itemCount: number }>();
+
+    for (const feast of feasts) {
+      for (const item of feast.schedule!.items) {
+        if (!item.memberId) continue;
+        const start = parseTime(item.startTime) ?? 0;
+        const end = parseTime(item.endTime) ?? 0;
+        const existing = loadMap.get(item.memberId) ?? { totalMinutes: 0, itemCount: 0 };
+        existing.totalMinutes += Math.max(0, end - start);
+        existing.itemCount += 1;
+        loadMap.set(item.memberId, existing);
+      }
+    }
+
+    const result: MemberScheduleLoad[] = members.map((m) => {
+      const data = loadMap.get(m.id) ?? { totalMinutes: 0, itemCount: 0 };
+      return {
+        memberId: m.id,
+        name: m.name,
+        totalMinutes: Math.round(data.totalMinutes),
+        itemCount: data.itemCount,
+      };
+    });
+
+    result.sort((a, b) => b.totalMinutes - a.totalMinutes);
+    res.json({ success: true, data: result });
+  } catch {
+    res.status(500).json({ success: false, error: 'Failed to get member schedule load' });
   }
 });
 

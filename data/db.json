@@ -89,7 +89,9 @@
           "ingredientIds": [
             "i1",
             "i8"
-          ]
+          ],
+          "equipment": "cutting-board",
+          "parallel": false
         },
         {
           "id": "s2",
@@ -107,7 +109,9 @@
           "tips": "看到糖冒细密小泡就差不多了",
           "ingredientIds": [
             "i5"
-          ]
+          ],
+          "equipment": "none",
+          "parallel": false
         },
         {
           "id": "s3",
@@ -126,7 +130,9 @@
             "i2",
             "i3",
             "i4"
-          ]
+          ],
+          "equipment": "wok",
+          "parallel": false
         },
         {
           "id": "s4",
@@ -146,7 +152,9 @@
             "i6",
             "i7",
             "i8"
-          ]
+          ],
+          "equipment": "pot",
+          "parallel": false
         },
         {
           "id": "s5",
@@ -162,9 +170,12 @@
             "不翻炒会糊底"
           ],
           "tips": "收汁时人别走开",
-          "ingredientIds": []
+          "ingredientIds": [],
+          "equipment": "wok",
+          "parallel": false
         }
-      ]
+      ],
+      "keepWarmDuration": 30
     },
     {
       "id": "r2",
@@ -248,7 +259,9 @@
             "i9",
             "i13",
             "i15"
-          ]
+          ],
+          "equipment": "none",
+          "parallel": false
         },
         {
           "id": "s7",
@@ -266,7 +279,9 @@
           "tips": "一面煎透了再翻",
           "ingredientIds": [
             "i9"
-          ]
+          ],
+          "equipment": "wok",
+          "parallel": false
         },
         {
           "id": "s8",
@@ -287,7 +302,9 @@
             "i11",
             "i12",
             "i13"
-          ]
+          ],
+          "equipment": "pot",
+          "parallel": false
         },
         {
           "id": "s9",
@@ -304,9 +321,12 @@
           "tips": "留一点汤汁拌米饭超好吃",
           "ingredientIds": [
             "i14"
-          ]
+          ],
+          "equipment": "pot",
+          "parallel": false
         }
-      ]
+      ],
+      "keepWarmDuration": 30
     },
     {
       "id": "r3",
@@ -390,7 +410,9 @@
           "ingredientIds": [
             "i16",
             "i18"
-          ]
+          ],
+          "equipment": "cutting-board",
+          "parallel": false
         },
         {
           "id": "s11",
@@ -411,7 +433,9 @@
             "i20",
             "i21",
             "i22"
-          ]
+          ],
+          "equipment": "cutting-board",
+          "parallel": false
         },
         {
           "id": "s12",
@@ -426,7 +450,9 @@
             "水没挤干净太稀"
           ],
           "tips": "放冰箱冰一下更好吃",
-          "ingredientIds": []
+          "ingredientIds": [],
+          "equipment": "none",
+          "parallel": false
         }
       ]
     },
@@ -499,7 +525,9 @@
             "i24",
             "i26",
             "i27"
-          ]
+          ],
+          "equipment": "cutting-board",
+          "parallel": false
         },
         {
           "id": "s14",
@@ -517,7 +545,9 @@
           "tips": "油温要高，鸡蛋才蓬松",
           "ingredientIds": [
             "i24"
-          ]
+          ],
+          "equipment": "wok",
+          "parallel": false
         },
         {
           "id": "s15",
@@ -537,7 +567,9 @@
             "i23",
             "i25",
             "i26"
-          ]
+          ],
+          "equipment": "wok",
+          "parallel": false
         },
         {
           "id": "s16",
@@ -554,9 +586,12 @@
           "tips": "翻两下匀了就行",
           "ingredientIds": [
             "i27"
-          ]
+          ],
+          "equipment": "wok",
+          "parallel": false
         }
-      ]
+      ],
+      "keepWarmDuration": 30
     },
     {
       "id": "r5",
@@ -642,7 +677,9 @@
             "i30",
             "i32",
             "i33"
-          ]
+          ],
+          "equipment": "cutting-board",
+          "parallel": false
         },
         {
           "id": "s18",
@@ -662,7 +699,9 @@
             "i28",
             "i29",
             "i30"
-          ]
+          ],
+          "equipment": "steamer",
+          "parallel": false
         },
         {
           "id": "s19",
@@ -680,9 +719,12 @@
           "ingredientIds": [
             "i31",
             "i34"
-          ]
+          ],
+          "equipment": "steamer",
+          "parallel": false
         }
-      ]
+      ],
+      "keepWarmDuration": 30
     }
   ],
   "members": [
@@ -891,7 +933,383 @@
           "assignedMemberId": "m4",
           "completed": false
         }
-      ]
+      ],
+      "schedule": {
+        "feastId": "f1",
+        "mealTime": "18:00",
+        "items": [
+          {
+            "id": "r1_s1",
+            "taskId": "t1",
+            "stepId": "s1",
+            "recipeId": "r1",
+            "recipeName": "奶奶的红烧肉",
+            "stepTitle": "处理五花肉",
+            "stepOrder": 1,
+            "type": "wash-cut",
+            "memberId": "m3",
+            "memberName": "小明",
+            "equipment": "cutting-board",
+            "duration": 15,
+            "startTime": "16:17",
+            "endTime": "16:32",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r1_s2",
+            "taskId": "task_s2",
+            "stepId": "s2",
+            "recipeId": "r1",
+            "recipeName": "奶奶的红烧肉",
+            "stepTitle": "炒糖色",
+            "stepOrder": 2,
+            "type": "prep",
+            "equipment": "none",
+            "duration": 8,
+            "startTime": "16:32",
+            "endTime": "16:40",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r1_s3",
+            "taskId": "t5",
+            "stepId": "s3",
+            "recipeId": "r1",
+            "recipeName": "奶奶的红烧肉",
+            "stepTitle": "煸炒上色",
+            "stepOrder": 3,
+            "type": "cooking",
+            "memberId": "m1",
+            "memberName": "爸爸",
+            "equipment": "wok",
+            "duration": 10,
+            "startTime": "16:40",
+            "endTime": "16:50",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r1_s4",
+            "taskId": "t5",
+            "stepId": "s4",
+            "recipeId": "r1",
+            "recipeName": "奶奶的红烧肉",
+            "stepTitle": "小火慢炖",
+            "stepOrder": 4,
+            "type": "cooking",
+            "memberId": "m1",
+            "memberName": "爸爸",
+            "equipment": "pot",
+            "duration": 60,
+            "startTime": "16:50",
+            "endTime": "17:50",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r2_s6",
+            "taskId": "task_s6",
+            "stepId": "s6",
+            "recipeId": "r2",
+            "recipeName": "妈妈的糖醋排骨",
+            "stepTitle": "排骨焯水",
+            "stepOrder": 1,
+            "type": "wash-cut",
+            "equipment": "none",
+            "duration": 12,
+            "startTime": "17:00",
+            "endTime": "17:12",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r2_s7",
+            "taskId": "t6",
+            "stepId": "s7",
+            "recipeId": "r2",
+            "recipeName": "妈妈的糖醋排骨",
+            "stepTitle": "煎排骨",
+            "stepOrder": 2,
+            "type": "cooking",
+            "memberId": "m1",
+            "memberName": "爸爸",
+            "equipment": "wok",
+            "duration": 15,
+            "startTime": "17:12",
+            "endTime": "17:27",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r2_s8",
+            "taskId": "t6",
+            "stepId": "s8",
+            "recipeId": "r2",
+            "recipeName": "妈妈的糖醋排骨",
+            "stepTitle": "糖醋炖煮",
+            "stepOrder": 3,
+            "type": "cooking",
+            "memberId": "m1",
+            "memberName": "爸爸",
+            "equipment": "pot",
+            "duration": 25,
+            "startTime": "17:27",
+            "endTime": "17:52",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r3_s10",
+            "taskId": "t2",
+            "stepId": "s10",
+            "recipeId": "r3",
+            "recipeName": "爸爸的凉拌黄瓜",
+            "stepTitle": "处理黄瓜",
+            "stepOrder": 1,
+            "type": "wash-cut",
+            "memberId": "m3",
+            "memberName": "小明",
+            "equipment": "cutting-board",
+            "duration": 15,
+            "startTime": "17:37",
+            "endTime": "17:52",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r4_s13",
+            "taskId": "task_s13",
+            "stepId": "s13",
+            "recipeId": "r4",
+            "recipeName": "外婆的番茄炒蛋",
+            "stepTitle": "备料",
+            "stepOrder": 1,
+            "type": "wash-cut",
+            "equipment": "cutting-board",
+            "duration": 8,
+            "startTime": "17:39",
+            "endTime": "17:47",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r4_s14",
+            "taskId": "t7",
+            "stepId": "s14",
+            "recipeId": "r4",
+            "recipeName": "外婆的番茄炒蛋",
+            "stepTitle": "炒鸡蛋",
+            "stepOrder": 2,
+            "type": "cooking",
+            "memberId": "m1",
+            "memberName": "爸爸",
+            "equipment": "wok",
+            "duration": 3,
+            "startTime": "17:47",
+            "endTime": "17:50",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r1_s5",
+            "taskId": "t9",
+            "stepId": "s5",
+            "recipeId": "r1",
+            "recipeName": "奶奶的红烧肉",
+            "stepTitle": "大火收汁",
+            "stepOrder": 5,
+            "type": "plating",
+            "memberId": "m4",
+            "memberName": "小红",
+            "equipment": "wok",
+            "duration": 10,
+            "startTime": "17:50",
+            "endTime": "18:00",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r4_s15",
+            "taskId": "t7",
+            "stepId": "s15",
+            "recipeId": "r4",
+            "recipeName": "外婆的番茄炒蛋",
+            "stepTitle": "炒番茄",
+            "stepOrder": 3,
+            "type": "cooking",
+            "memberId": "m1",
+            "memberName": "爸爸",
+            "equipment": "wok",
+            "duration": 8,
+            "startTime": "17:50",
+            "endTime": "17:58",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r2_s9",
+            "taskId": "task_s9",
+            "stepId": "s9",
+            "recipeId": "r2",
+            "recipeName": "妈妈的糖醋排骨",
+            "stepTitle": "收汁装盘",
+            "stepOrder": 4,
+            "type": "plating",
+            "equipment": "pot",
+            "duration": 8,
+            "startTime": "17:52",
+            "endTime": "18:00",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r3_s11",
+            "taskId": "task_s11",
+            "stepId": "s11",
+            "recipeId": "r3",
+            "recipeName": "爸爸的凉拌黄瓜",
+            "stepTitle": "调酱汁",
+            "stepOrder": 2,
+            "type": "prep",
+            "equipment": "cutting-board",
+            "duration": 5,
+            "startTime": "17:52",
+            "endTime": "17:57",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r3_s12",
+            "taskId": "t8",
+            "stepId": "s12",
+            "recipeId": "r3",
+            "recipeName": "爸爸的凉拌黄瓜",
+            "stepTitle": "拌匀装盘",
+            "stepOrder": 3,
+            "type": "plating",
+            "memberId": "m4",
+            "memberName": "小红",
+            "equipment": "none",
+            "duration": 3,
+            "startTime": "17:57",
+            "endTime": "18:00",
+            "locked": false,
+            "parallel": false
+          },
+          {
+            "id": "r4_s16",
+            "taskId": "task_s16",
+            "stepId": "s16",
+            "recipeId": "r4",
+            "recipeName": "外婆的番茄炒蛋",
+            "stepTitle": "混合出锅",
+            "stepOrder": 4,
+            "type": "plating",
+            "equipment": "wok",
+            "duration": 2,
+            "startTime": "17:58",
+            "endTime": "18:00",
+            "locked": false,
+            "parallel": false
+          }
+        ],
+        "conflicts": [
+          {
+            "id": "member_r1_s5|r3_s12",
+            "type": "member",
+            "severity": "error",
+            "message": "人员冲突：小红 在 17:50 有重叠任务（奶奶的红烧肉·大火收汁 与 爸爸的凉拌黄瓜·拌匀装盘）",
+            "itemIds": [
+              "r1_s5",
+              "r3_s12"
+            ]
+          },
+          {
+            "id": "equipment_r1_s5|r4_s16",
+            "type": "equipment",
+            "severity": "error",
+            "message": "设备冲突：炒锅 在 17:50 被同时占用（奶奶的红烧肉·大火收汁 与 外婆的番茄炒蛋·混合出锅）",
+            "itemIds": [
+              "r1_s5",
+              "r4_s16"
+            ]
+          },
+          {
+            "id": "equipment_r1_s5|r4_s15",
+            "type": "equipment",
+            "severity": "error",
+            "message": "设备冲突：炒锅 在 17:50 被同时占用（奶奶的红烧肉·大火收汁 与 外婆的番茄炒蛋·炒番茄）",
+            "itemIds": [
+              "r1_s5",
+              "r4_s15"
+            ]
+          },
+          {
+            "id": "equipment_r1_s4|r2_s8",
+            "type": "equipment",
+            "severity": "error",
+            "message": "设备冲突：汤锅 在 16:50 被同时占用（奶奶的红烧肉·小火慢炖 与 妈妈的糖醋排骨·糖醋炖煮）",
+            "itemIds": [
+              "r1_s4",
+              "r2_s8"
+            ]
+          },
+          {
+            "id": "member_r1_s4|r2_s7",
+            "type": "member",
+            "severity": "error",
+            "message": "人员冲突：爸爸 在 16:50 有重叠任务（奶奶的红烧肉·小火慢炖 与 妈妈的糖醋排骨·煎排骨）",
+            "itemIds": [
+              "r1_s4",
+              "r2_s7"
+            ]
+          },
+          {
+            "id": "member_r1_s4|r4_s14",
+            "type": "member",
+            "severity": "error",
+            "message": "人员冲突：爸爸 在 16:50 有重叠任务（奶奶的红烧肉·小火慢炖 与 外婆的番茄炒蛋·炒鸡蛋）",
+            "itemIds": [
+              "r1_s4",
+              "r4_s14"
+            ]
+          },
+          {
+            "id": "member_r2_s8|r4_s15",
+            "type": "member",
+            "severity": "error",
+            "message": "人员冲突：爸爸 在 17:27 有重叠任务（妈妈的糖醋排骨·糖醋炖煮 与 外婆的番茄炒蛋·炒番茄）",
+            "itemIds": [
+              "r2_s8",
+              "r4_s15"
+            ]
+          },
+          {
+            "id": "member_r2_s8|r4_s14",
+            "type": "member",
+            "severity": "error",
+            "message": "人员冲突：爸爸 在 17:27 有重叠任务（妈妈的糖醋排骨·糖醋炖煮 与 外婆的番茄炒蛋·炒鸡蛋）",
+            "itemIds": [
+              "r2_s8",
+              "r4_s14"
+            ]
+          },
+          {
+            "id": "equipment_r3_s10|r4_s13",
+            "type": "equipment",
+            "severity": "error",
+            "message": "设备冲突：案板 在 17:37 被同时占用（爸爸的凉拌黄瓜·处理黄瓜 与 外婆的番茄炒蛋·备料）",
+            "itemIds": [
+              "r3_s10",
+              "r4_s13"
+            ]
+          }
+        ],
+        "generatedAt": "2026-06-17T23:31:13.595Z",
+        "updatedAt": "2026-06-17T23:31:13.595Z"
+      }
     },
     {
       "id": "f2",

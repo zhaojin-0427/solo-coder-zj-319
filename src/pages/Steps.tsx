@@ -9,9 +9,12 @@ import {
   AlertTriangle,
   Lightbulb,
   ChefHat,
+  Timer,
+  Layers,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { recipeApi, stepApi } from '@/lib/api';
-import type { Recipe, StepCard, HeatLevel, StepType } from '@/types';
+import type { Recipe, StepCard, HeatLevel, StepType, KitchenEquipment } from '@/types';
 import { clsx } from 'clsx';
 
 const heatLevelMap: Record<HeatLevel, { label: string; color: string; bg: string }> = {
@@ -27,6 +30,17 @@ const stepTypeMap: Record<StepType, { label: string; color: string; icon: string
   'cooking': { label: '烹饪烧制', color: 'bg-rose-500', icon: '🍳' },
   'plating': { label: '装盘出品', color: 'bg-emerald-500', icon: '🍽️' },
 };
+
+const equipmentOptions: { value: KitchenEquipment; label: string }[] = [
+  { value: 'none', label: '无设备' },
+  { value: 'gas-stove', label: '燃气灶' },
+  { value: 'wok', label: '炒锅' },
+  { value: 'steamer', label: '蒸锅' },
+  { value: 'oven', label: '烤箱' },
+  { value: 'rice-cooker', label: '电饭煲' },
+  { value: 'cutting-board', label: '案板' },
+  { value: 'pot', label: '炖锅' },
+];
 
 export default function Steps() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -91,6 +105,15 @@ export default function Steps() {
   const updateStepField = async (step: StepCard, field: keyof StepCard, value: any) => {
     try {
       await stepApi.update(step.id, { [field]: value });
+      fetchRecipes();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const updateRecipeField = async (recipe: Recipe, field: keyof Recipe, value: unknown) => {
+    try {
+      await recipeApi.update(recipe.id, { [field]: value } as Partial<Recipe>);
       fetchRecipes();
     } catch (e) {
       console.error(e);
@@ -177,6 +200,47 @@ export default function Steps() {
 
                 {isExpanded && (
                   <div className="border-t border-stone-100 bg-stone-50/50 p-4 md:p-6">
+                    <div className="mb-4 p-4 rounded-xl bg-white border border-stone-200">
+                      <div className="flex items-center gap-1.5 mb-3 text-stone-700 font-semibold text-sm">
+                        <Timer className="w-4 h-4 text-orange-500" />
+                        出品时间约束（用于烹饪排程倒排）
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-stone-500 mb-1.5">最晚出锅时间</label>
+                          <input
+                            type="time"
+                            value={recipe.latestReadyTime ?? ''}
+                            onChange={(e) =>
+                              updateRecipeField(
+                                recipe,
+                                'latestReadyTime',
+                                e.target.value || undefined
+                              )
+                            }
+                            className="w-full px-3 py-1.5 rounded-lg border border-stone-200 text-sm outline-none focus:border-orange-400"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-stone-500 mb-1.5">保温时长（分钟，超出将提示冲突）</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={recipe.keepWarmDuration ?? ''}
+                            onChange={(e) =>
+                              updateRecipeField(
+                                recipe,
+                                'keepWarmDuration',
+                                e.target.value === '' ? undefined : Number(e.target.value)
+                              )
+                            }
+                            placeholder="留空表示不限制"
+                            className="w-full px-3 py-1.5 rounded-lg border border-stone-200 text-sm outline-none focus:border-orange-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="relative">
                       <div className="absolute left-8 top-4 bottom-4 w-0.5 bg-gradient-to-b from-orange-200 via-rose-200 to-emerald-200 rounded-full hidden md:block"></div>
 
@@ -278,10 +342,46 @@ export default function Steps() {
                                       </select>
                                     </div>
 
-                                    <div className="p-3 rounded-xl bg-white border border-stone-200 flex items-center justify-center">
-                                      <span className={clsx('text-sm font-semibold', heatLevelMap[step.heatLevel].color)}>
-                                        {heatLevelMap[step.heatLevel].label}
+                                    <div className="p-3 rounded-xl bg-white border border-stone-200">
+                                      <label className="block text-xs text-stone-500 mb-1.5 flex items-center gap-1">
+                                        <UtensilsCrossed className="w-3 h-3" /> 设备
+                                      </label>
+                                      <select
+                                        value={step.equipment ?? 'none'}
+                                        onChange={(e) =>
+                                          updateStepField(step, 'equipment', e.target.value as KitchenEquipment)
+                                        }
+                                        className="w-full px-2 py-1 rounded-lg border border-stone-200 text-sm outline-none focus:border-orange-400"
+                                      >
+                                        {equipmentOptions.map((o) => (
+                                          <option key={o.value} value={o.value}>
+                                            {o.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between p-3 rounded-xl bg-white border border-stone-200">
+                                    <div className="flex items-center gap-1.5 text-xs text-stone-500">
+                                      <Layers className="w-3.5 h-3.5" />
+                                      <span>与同菜其他步骤的关系</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-stone-400">
+                                        当前：{step.parallel ? '可并行' : '需串行'}
                                       </span>
+                                      <button
+                                        onClick={() => updateStepField(step, 'parallel', !step.parallel)}
+                                        className={clsx(
+                                          'text-xs px-3 py-1 rounded-full font-medium transition-colors',
+                                          step.parallel
+                                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                            : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                        )}
+                                      >
+                                        {step.parallel ? '✓ 可并行' : '↻ 需串行'}
+                                      </button>
                                     </div>
                                   </div>
 
