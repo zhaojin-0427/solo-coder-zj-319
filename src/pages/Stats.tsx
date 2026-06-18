@@ -45,6 +45,10 @@ import type {
   EquipmentUsageItem,
   ScheduleSummary,
   MemberScheduleLoad,
+  HighFrequencyAvoided,
+  RecipeCompatibilityStat,
+  MemberTasteSatisfaction,
+  RiskProcessingStat,
 } from '@/types';
 
 const COLORS = ['#f97316', '#f43f5e', '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#14b8a6'];
@@ -59,6 +63,10 @@ export default function Stats() {
   const [equipmentUsage, setEquipmentUsage] = useState<EquipmentUsageItem[]>([]);
   const [scheduleSummary, setScheduleSummary] = useState<ScheduleSummary | null>(null);
   const [memberLoad, setMemberLoad] = useState<MemberScheduleLoad[]>([]);
+  const [highFrequencyAvoided, setHighFrequencyAvoided] = useState<HighFrequencyAvoided[]>([]);
+  const [recipeCompatibility, setRecipeCompatibility] = useState<RecipeCompatibilityStat[]>([]);
+  const [memberTasteSatisfaction, setMemberTasteSatisfaction] = useState<MemberTasteSatisfaction[]>([]);
+  const [riskProcessing, setRiskProcessing] = useState<RiskProcessingStat | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,7 +80,11 @@ export default function Stats() {
       statsApi.getEquipmentUsage().catch(() => []),
       statsApi.getScheduleSummary().catch(() => null),
       statsApi.getMemberScheduleLoad().catch(() => []),
-    ]).then(([o, p, t, e, m, ps, eu, ss, ml]) => {
+      statsApi.getHighFrequencyAvoided().catch(() => []),
+      statsApi.getRecipeCompatibility().catch(() => []),
+      statsApi.getMemberTasteSatisfaction().catch(() => []),
+      statsApi.getRiskProcessing().catch(() => null),
+    ]).then(([o, p, t, e, m, ps, eu, ss, ml, hfa, rc, mts, rp]) => {
       setOverview(o);
       setPopularDishes(p);
       setTimeDistribution(t);
@@ -82,6 +94,10 @@ export default function Stats() {
       setEquipmentUsage(eu);
       setScheduleSummary(ss);
       setMemberLoad(ml);
+      setHighFrequencyAvoided(hfa);
+      setRecipeCompatibility(rc);
+      setMemberTasteSatisfaction(mts);
+      setRiskProcessing(rp);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -618,6 +634,246 @@ export default function Stats() {
               <div className="text-xs text-red-600 mt-1">所有排程冲突合计</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
+          <AlertTriangle className="w-6 h-6 text-amber-500" />
+          口味与忌口风险统计
+        </h2>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+          <div className="flex items-center gap-2 mb-5">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+            <h3 className="font-bold text-stone-800">高频忌口食材 TOP10</h3>
+          </div>
+          {highFrequencyAvoided.length > 0 ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={highFrequencyAvoided} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 12, fill: '#94a3b8' }} allowDecimals={false} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: '#475569' }}
+                    width={80}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                      fontSize: '13px',
+                    }}
+                    formatter={(value: number) => [`${value} 人忌口`, '出现次数']}
+                  />
+                  <Bar dataKey="count" radius={[0, 8, 8, 0]}>
+                    {highFrequencyAvoided.map((_, idx) => (
+                      <Cell key={idx} fill={['#ef4444', '#f87171', '#fb923c', '#fbbf24', '#facc15', '#a78bfa', '#60a5fa', '#34d399', '#38bdf8', '#c084fc'][idx % 10]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState icon={AlertTriangle} text="暂无忌口食材数据，请先设置成员口味画像" />
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+          <div className="flex items-center gap-2 mb-5">
+            <TrendingUp className="w-5 h-5 text-emerald-500" />
+            <h3 className="font-bold text-stone-800">菜品适配度排行</h3>
+          </div>
+          {recipeCompatibility.length > 0 ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={recipeCompatibility} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: '#94a3b8' }} />
+                  <YAxis
+                    type="category"
+                    dataKey="recipeName"
+                    tick={{ fontSize: 12, fill: '#475569' }}
+                    width={80}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                      fontSize: '13px',
+                    }}
+                    formatter={(value: number) => [`${value} 分`, '适配度']}
+                  />
+                  <Bar dataKey="avgScore" radius={[0, 8, 8, 0]}>
+                    {recipeCompatibility.map((item, idx) => (
+                      <Cell
+                        key={idx}
+                        fill={
+                          item.avgScore >= 80
+                            ? '#10b981'
+                            : item.avgScore >= 60
+                            ? '#f59e0b'
+                            : '#ef4444'
+                        }
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState icon={TrendingUp} text="暂无适配度数据，请先创建家宴并选择菜品" />
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+          <div className="flex items-center gap-2 mb-5">
+            <Users className="w-5 h-5 text-blue-500" />
+            <h3 className="font-bold text-stone-800">成员口味满足率</h3>
+          </div>
+          {memberTasteSatisfaction.length > 0 ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={memberTasteSatisfaction} margin={{ bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="memberName"
+                    tick={{ fontSize: 11, fill: '#64748b' }}
+                    interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                    height={50}
+                  />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#94a3b8' }} unit="%" />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                      fontSize: '13px',
+                    }}
+                    formatter={(value: number) => [`${value}%`, '口味满足率']}
+                  />
+                  <Bar dataKey="satisfactionRate" radius={[6, 6, 0, 0]}>
+                    {memberTasteSatisfaction.map((item, idx) => (
+                      <Cell
+                        key={idx}
+                        fill={
+                          item.satisfactionRate >= 80
+                            ? '#10b981'
+                            : item.satisfactionRate >= 60
+                            ? '#f59e0b'
+                            : '#ef4444'
+                        }
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState icon={Users} text="暂无成员口味满足率数据" />
+          )}
+          {memberTasteSatisfaction.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {memberTasteSatisfaction.map((m) => (
+                <div key={m.memberId} className="flex items-center gap-3">
+                  <span className="text-sm text-stone-600 w-20 truncate">{m.memberName}</span>
+                  <div className="flex-1 h-4 bg-stone-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        m.satisfactionRate >= 80
+                          ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
+                          : m.satisfactionRate >= 60
+                          ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                          : 'bg-gradient-to-r from-red-400 to-rose-500'
+                      }`}
+                      style={{ width: `${m.satisfactionRate}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-semibold text-stone-800 w-12 text-right">
+                    {m.satisfactionRate}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+          <div className="flex items-center gap-2 mb-5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+            <h3 className="font-bold text-stone-800">已处理风险占比</h3>
+          </div>
+          {riskProcessing && riskProcessing.totalRisks > 0 ? (
+            <>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: '已解决/确认', value: riskProcessing.resolvedRisks, color: '#10b981' },
+                        { name: '已忽略', value: riskProcessing.ignoredRisks, color: '#94a3b8' },
+                        { name: '待处理', value: riskProcessing.pendingRisks, color: '#ef4444' },
+                      ].filter((d) => d.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={95}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {[
+                        { name: '已解决/确认', value: riskProcessing.resolvedRisks, color: '#10b981' },
+                        { name: '已忽略', value: riskProcessing.ignoredRisks, color: '#94a3b8' },
+                        { name: '待处理', value: riskProcessing.pendingRisks, color: '#ef4444' },
+                      ].filter((d) => d.value > 0).map((entry, idx) => (
+                        <Cell key={idx} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: 'none',
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                        fontSize: '13px',
+                      }}
+                      formatter={(value: number) => [`${value} 项`, '数量']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                  <span className="text-stone-600">已解决/确认</span>
+                  <span className="ml-auto font-semibold text-stone-800">{riskProcessing.resolvedRisks}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="w-3 h-3 rounded-full bg-stone-400"></span>
+                  <span className="text-stone-600">已忽略</span>
+                  <span className="ml-auto font-semibold text-stone-800">{riskProcessing.ignoredRisks}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                  <span className="text-stone-600">待处理</span>
+                  <span className="ml-auto font-semibold text-stone-800">{riskProcessing.pendingRisks}</span>
+                </div>
+              </div>
+              <div className="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-center">
+                <div className="text-xs text-emerald-600 mb-1">整体处理率</div>
+                <div className="text-3xl font-bold text-emerald-700">{riskProcessing.processingRate}%</div>
+              </div>
+            </>
+          ) : (
+            <EmptyState icon={CheckCircle2} text="暂无风险处理数据" />
+          )}
         </div>
       </div>
     </div>

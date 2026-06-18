@@ -12,9 +12,11 @@ import {
   Timer,
   Layers,
   UtensilsCrossed,
+  ShieldAlert,
 } from 'lucide-react';
 import { recipeApi, stepApi } from '@/lib/api';
 import type { Recipe, StepCard, HeatLevel, StepType, KitchenEquipment } from '@/types';
+import { RecipeRiskTagsEditor } from '@/components/RecipeRiskTagsEditor';
 import { clsx } from 'clsx';
 
 const heatLevelMap: Record<HeatLevel, { label: string; color: string; bg: string }> = {
@@ -47,6 +49,11 @@ export default function Steps() {
   const [loading, setLoading] = useState(true);
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
   const [draggedStep, setDraggedStep] = useState<StepCard | null>(null);
+  const [riskTagsEditor, setRiskTagsEditor] = useState<{ open: boolean; recipeId: string; recipeName: string }>({
+    open: false,
+    recipeId: '',
+    recipeName: '',
+  });
 
   const fetchRecipes = () => {
     setLoading(true);
@@ -199,8 +206,29 @@ export default function Steps() {
                 </button>
 
                 {isExpanded && (
-                  <div className="border-t border-stone-100 bg-stone-50/50 p-4 md:p-6">
-                    <div className="mb-4 p-4 rounded-xl bg-white border border-stone-200">
+                  <div className="border-t border-stone-100 bg-stone-50/50 p-4 md:p-6 space-y-4">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+                      <div>
+                        <div className="text-sm font-semibold text-stone-800 flex items-center gap-2">
+                          <ShieldAlert className="w-4 h-4 text-amber-600" />
+                          口味与忌口风险标签
+                        </div>
+                        <div className="text-xs text-stone-500 mt-0.5">
+                          {recipe.riskTags
+                            ? `已设置 ${recipe.riskTags.containsAllergens.length} 种过敏源${recipe.riskTags.highSalt ? '、高盐' : ''}${recipe.riskTags.highOil ? '、高油' : ''}${recipe.riskTags.highSugar ? '、高糖' : ''}等风险属性`
+                            : '尚未设置风险标签，建议标记口味等级、过敏源和可替换食材'}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setRiskTagsEditor({ open: true, recipeId: recipe.id, recipeName: recipe.name })}
+                        className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition flex items-center gap-1.5"
+                      >
+                        <ShieldAlert size={14} />
+                        {recipe.riskTags ? '编辑标签' : '设置标签'}
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-white border border-stone-200">
                       <div className="flex items-center gap-1.5 mb-3 text-stone-700 font-semibold text-sm">
                         <Timer className="w-4 h-4 text-orange-500" />
                         出品时间约束（用于烹饪排程倒排）
@@ -440,6 +468,14 @@ export default function Steps() {
           })}
         </div>
       )}
+
+      <RecipeRiskTagsEditor
+        open={riskTagsEditor.open}
+        recipeId={riskTagsEditor.recipeId}
+        recipeName={riskTagsEditor.recipeName}
+        onClose={() => setRiskTagsEditor({ ...riskTagsEditor, open: false })}
+        onSaved={() => fetchRecipes()}
+      />
     </div>
   );
 }

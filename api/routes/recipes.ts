@@ -1,7 +1,8 @@
 import { Router, type Request, type Response } from 'express';
 import { dataStore } from '../data/DataStore.js';
-import type { Recipe, Ingredient, StepCard } from '../types/index.js';
+import type { Recipe, Ingredient, StepCard, RecipeRiskTags } from '../types/index.js';
 import { parseRecipeText } from '../services/recipeParser.js';
+import { getDefaultRiskTags } from '../services/compatibility.js';
 
 const router = Router();
 
@@ -35,6 +36,40 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+router.get('/:id/risk-tags', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const recipe = dataStore.getRecipeById(id);
+    if (!recipe) {
+      res.status(404).json({ success: false, error: 'Recipe not found' });
+      return;
+    }
+    const riskTags = recipe.riskTags || {
+      ...getDefaultRiskTags(),
+      keyIngredients: recipe.ingredients.map((i) => i.name),
+    };
+    res.json({ success: true, data: riskTags });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to get recipe risk tags' });
+  }
+});
+
+router.put('/:id/risk-tags', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const existing = dataStore.getRecipeById(id);
+    if (!existing) {
+      res.status(404).json({ success: false, error: 'Recipe not found' });
+      return;
+    }
+    const riskTags = req.body as RecipeRiskTags;
+    const updated = dataStore.updateRecipe(id, { riskTags });
+    res.json({ success: true, data: updated?.riskTags });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to update recipe risk tags' });
+  }
+});
+
 router.post('/parse', async (req: Request, res: Response): Promise<void> => {
   try {
     const { text, name } = req.body as { text: string; name?: string };
@@ -51,7 +86,7 @@ router.post('/parse', async (req: Request, res: Response): Promise<void> => {
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, source, originalText, servings, ingredients, steps, tags } = req.body as {
+    const { name, source, originalText, servings, ingredients, steps, tags, riskTags } = req.body as {
       name: string;
       source: string;
       originalText: string;
@@ -59,6 +94,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       ingredients: Omit<Ingredient, 'id'>[];
       steps: Omit<StepCard, 'id' | 'recipeId'>[];
       tags: string[];
+      riskTags?: RecipeRiskTags;
     };
 
     const recipeId = generateId('r');
@@ -92,6 +128,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       tags: tags || [],
       createdAt: now,
       updatedAt: now,
+      riskTags: riskTags || {
+        ...getDefaultRiskTags(),
+        keyIngredients: recipeIngredients.map((i) => i.name),
+      },
     };
 
     const saved = dataStore.addRecipe(recipe);

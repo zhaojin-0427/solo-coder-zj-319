@@ -16,12 +16,15 @@ import {
   Edit3,
   AlertTriangle,
   ArrowLeftRight,
-  Clock,
-  Package,
   CookingPot,
+  ShieldAlert,
+  User,
+  Sparkles,
 } from 'lucide-react';
 import { feastApi, recipeApi, memberApi } from '@/lib/api';
 import FeastSchedulePanel from '@/components/FeastSchedulePanel';
+import { MemberProfileEditor } from '@/components/MemberProfileEditor';
+import { FeastRiskCheckPanel } from '@/components/FeastRiskCheckPanel';
 import type {
   Feast,
   Recipe,
@@ -32,6 +35,8 @@ import type {
   CalculatedIngredient,
   PurchaseStatus,
   ReplacementIngredient,
+  FeastCompatibilityResult,
+  RecipeCompatibilityScore,
 } from '@/types';
 import { clsx } from 'clsx';
 
@@ -106,12 +111,26 @@ export default function Feasts() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
-  const [feastTab, setFeastTab] = useState<'plan' | 'schedule'>('plan');
+  const [feastTab, setFeastTab] = useState<'plan' | 'schedule' | 'risk'>('plan');
 
   const [feastName, setFeastName] = useState('');
   const [feastDate, setFeastDate] = useState(new Date().toISOString().split('T')[0]);
   const [feastPeople, setFeastPeople] = useState(4);
   const [selectedRecipes, setSelectedRecipes] = useState<string[]>([]);
+  const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
+
+  const [profileEditor, setProfileEditor] = useState<{ open: boolean; memberId: string; memberName: string }>({
+    open: false,
+    memberId: '',
+    memberName: '',
+  });
+  const [showMemberManager, setShowMemberManager] = useState(false);
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState('');
+
+  const [compatibility, setCompatibility] = useState<FeastCompatibilityResult | null>(null);
+  const [compatLoading, setCompatLoading] = useState(false);
+  const [recipeCompatMap, setRecipeCompatMap] = useState<Record<string, RecipeCompatibilityScore>>({});
 
   const fetchData = async () => {
     setLoading(true);
@@ -139,16 +158,25 @@ export default function Feasts() {
   const handleCreate = async () => {
     if (!feastName.trim() || selectedRecipes.length === 0) return;
     try {
-      await feastApi.create({
+      const created = await feastApi.create({
         name: feastName,
         date: feastDate,
         people: feastPeople,
         recipeIds: selectedRecipes,
       });
+      if (selectedAttendees.length > 0) {
+        await feastApi.updateAttendees(created.id, selectedAttendees);
+        try {
+          await feastApi.computeCompatibility(created.id, selectedAttendees);
+        } catch (_e) {
+          // ignore compatibility errors
+        }
+      }
       setShowModal(false);
       setActiveTab('list');
       setFeastName('');
       setSelectedRecipes([]);
+      setSelectedAttendees([]);
       fetchData();
     } catch (e) {
       console.error(e);
@@ -223,6 +251,53 @@ export default function Feasts() {
   const getMemberById = (id?: string) => members.find((m) => m.id === id);
   const getRecipeById = (id: string) => recipes.find((r) => r.id === id);
 
+  const handleAddMember = async () => {
+    if (!newMemberName.trim()) return;
+    try {
+      await memberApi.create({ name: newMemberName.trim(), role: newMemberRole.trim() || undefined });
+      setNewMemberName('');
+      setNewMemberRole('');
+      fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteMember = async (id: string) => {
+    if (!confirm('确定要删除该成员吗？')) return;
+    try {
+      await memberApi.delete(id);
+      fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const computeFeastCompatibility = async (feastId: string, attendeeIds?: string[]) => {
+    try {
+      setCompatLoading(true);
+      const result = await feastApi.computeCompatibility(feastId, attendeeIds);
+      setCompatibility(result);
+      return result;
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCompatLoading(false);
+    }
+  };
+
+  const toggleAttendee = (memberId: string) => {
+    setSelectedAttendees((prev) =>
+      prev.includes(memberId) ? prev.filter((m) => m !== memberId) : [...prev, memberId]
+    );
+  };
+
+  useEffect(() => {
+    if (showModal && members.length > 0 && selectedAttendees.length === 0) {
+      setSelectedAttendees(members.map((m) => m.id));
+    }
+  }, [showModal, members]);
+
   const groupedIngredients = (ings: CalculatedIngredient[]) => {
     const groups: Record<string, CalculatedIngredient[]> = { main: [], seasoning: [], side: [] };
     for (const ing of ings) {
@@ -264,16 +339,25 @@ export default function Feasts() {
           </h1>
           <p className="text-sm text-stone-500 mt-1">按人数自动换算食材用量，给家庭成员分配洗切备料任务</p>
         </div>
-        <button
-          onClick={() => {
-            setShowModal(true);
-            setActiveTab('create');
-          }}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl font-medium shadow-lg shadow-rose-500/30 hover:shadow-xl transition-all"
-        >
-          <Plus className="w-5 h-5" />
-          新建家宴
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowMemberManager(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-stone-700 rounded-xl font-medium border border-stone-200 hover:bg-stone-50 transition-all"
+          >
+            <User className="w-4 h-4" />
+            成员管理
+          </button>
+          <button
+            onClick={() => {
+              setShowModal(true);
+              setActiveTab('create');
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl font-medium shadow-lg shadow-rose-500/30 hover:shadow-xl transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            新建家宴
+          </button>
+        </div>
       </div>
 
       {feasts.length === 0 ? (
@@ -409,7 +493,7 @@ export default function Feasts() {
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button
                         onClick={() => setFeastTab('plan')}
                         className={clsx(
@@ -429,6 +513,26 @@ export default function Feasts() {
                         <CookingPot className="w-3.5 h-3.5" />
                         烹饪排程
                       </button>
+                      <button
+                        onClick={() => {
+                          setFeastTab('risk');
+                          if (!feast.riskCheck) {
+                            computeFeastCompatibility(feast.id, feast.attendeeMemberIds);
+                          }
+                        }}
+                        className={clsx(
+                          'inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                          feastTab === 'risk' ? 'bg-rose-500 text-white' : 'bg-white text-stone-600 hover:bg-stone-100'
+                        )}
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        口味与忌口检查
+                        {feast.riskCheck && feast.riskCheck.compatibility.criticalRiskCount > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                            {feast.riskCheck.compatibility.criticalRiskCount}
+                          </span>
+                        )}
+                      </button>
                       {feast.schedule && (
                         <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">
                           已排程
@@ -436,7 +540,64 @@ export default function Feasts() {
                       )}
                     </div>
 
-                    {feastTab === 'schedule' ? (
+                    {feastTab === 'risk' ? (
+                      <div className="space-y-4">
+                        <div className="bg-white rounded-xl p-4 border border-stone-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="text-sm font-semibold text-stone-800 flex items-center gap-2">
+                              <Users className="w-4 h-4 text-rose-500" />
+                              参宴成员
+                            </h5>
+                            <button
+                              onClick={() => computeFeastCompatibility(feast.id, feast.attendeeMemberIds)}
+                              disabled={compatLoading}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition disabled:opacity-50"
+                            >
+                              <RefreshCw className={clsx('w-3 h-3', compatLoading && 'animate-spin')} />
+                              重新检测
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {members.map((m) => {
+                              const selected = (feast.attendeeMemberIds || []).includes(m.id);
+                              const hasProfile = !!m.profile;
+                              return (
+                                <div key={m.id} className="flex items-center gap-1">
+                                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-sm border cursor-pointer transition-all" style={{ borderColor: selected ? '#f43f5e' : '#e7e5e4', background: selected ? '#fff1f2' : 'white' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selected}
+                                      onChange={async () => {
+                                        const newIds = selected
+                                          ? (feast.attendeeMemberIds || []).filter((id) => id !== m.id)
+                                          : [...(feast.attendeeMemberIds || []), m.id];
+                                        await feastApi.updateAttendees(feast.id, newIds);
+                                        fetchData();
+                                      }}
+                                      className="w-3.5 h-3.5 text-rose-500 rounded"
+                                    />
+                                    <span className={selected ? 'text-rose-700 font-medium' : 'text-stone-600'}>{m.name}</span>
+                                    {hasProfile && <span title="已设置口味画像"><Sparkles size={12} className="text-amber-400" /></span>}
+                                  </label>
+                                  <button
+                                    onClick={() => setProfileEditor({ open: true, memberId: m.id, memberName: m.name })}
+                                    className="p-1.5 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-md transition"
+                                    title="编辑口味画像"
+                                  >
+                                    <Edit3 size={13} />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <FeastRiskCheckPanel
+                          feastId={feast.id}
+                          riskCheck={feast.riskCheck}
+                          onUpdate={() => fetchData()}
+                        />
+                      </div>
+                    ) : feastTab === 'schedule' ? (
                       <FeastSchedulePanel feast={feast} recipes={recipes} members={members} onSaved={fetchData} />
                     ) : (
                     <div className="grid lg:grid-cols-2 gap-6">
@@ -780,6 +941,43 @@ export default function Feasts() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-stone-700 mb-2">
+                  参宴成员（{selectedAttendees.length}人已选）
+                </label>
+                <div className="flex flex-wrap gap-2 p-3 bg-stone-50 rounded-xl border border-stone-200 min-h-[52px]">
+                  {members.length === 0 ? (
+                    <span className="text-xs text-stone-400">暂无成员，可先到成员管理添加</span>
+                  ) : (
+                    members.map((m) => {
+                      const selected = selectedAttendees.includes(m.id);
+                      const hasProfile = !!m.profile;
+                      return (
+                        <label
+                          key={m.id}
+                          className={clsx(
+                            'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm cursor-pointer border transition-all',
+                            selected
+                              ? 'bg-rose-500 text-white border-rose-500'
+                              : 'bg-white text-stone-600 border-stone-200 hover:border-rose-300'
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => toggleAttendee(m.id)}
+                            className="hidden"
+                          />
+                          <User size={12} />
+                          {m.name}
+                          {hasProfile && <Sparkles size={10} className={selected ? 'text-amber-200' : 'text-amber-400'} />}
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-medium text-stone-700">
                     选择菜品（{selectedRecipes.length}道已选）
@@ -791,15 +989,70 @@ export default function Feasts() {
                     }, 0)}人份基准
                   </span>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-3 max-h-[300px overflow-y-auto p-1">
+                {selectedRecipes.length > 0 && selectedAttendees.length > 0 && (
+                  <div className="mb-3 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+                    <div className="text-xs font-medium text-amber-800 flex items-center gap-1.5 mb-1">
+                      <ShieldAlert size={13} />
+                      口味与忌口适配提示
+                    </div>
+                    <div className="text-[11px] text-amber-700">
+                      {(() => {
+                        const warnings: string[] = [];
+                        for (const rid of selectedRecipes) {
+                          const recipe = getRecipeById(rid);
+                          if (!recipe?.riskTags) continue;
+                          for (const mid of selectedAttendees) {
+                            const member = members.find((m) => m.id === mid);
+                            if (!member?.profile) continue;
+                            const p = member.profile;
+                            if (p.allergens.some((a) => recipe.riskTags!.containsAllergens.includes(a.type))) {
+                              const matched = p.allergens.filter((a) => recipe.riskTags!.containsAllergens.includes(a.type));
+                              warnings.push(`⚠️ ${member.name}可能对「${recipe.name}」过敏（${matched.map((m) => m.name).join('、')}）`);
+                            }
+                            if (p.avoidedIngredients.some((ing) => recipe.riskTags!.keyIngredients.includes(ing))) {
+                              const matched = p.avoidedIngredients.filter((ing) => recipe.riskTags!.keyIngredients.includes(ing));
+                              warnings.push(`✋ ${member.name}不吃「${recipe.name}」中的${matched.join('、')}`);
+                            }
+                            if (p.healthRequirements.lowSalt && recipe.riskTags!.highSalt) {
+                              warnings.push(`🧂 ${member.name}需要低盐，「${recipe.name}」含高盐`);
+                            }
+                            if (p.healthRequirements.lowOil && recipe.riskTags!.highOil) {
+                              warnings.push(`🛢️ ${member.name}需要低油，「${recipe.name}」含高油`);
+                            }
+                            if (p.healthRequirements.lowSugar && recipe.riskTags!.highSugar) {
+                              warnings.push(`🍬 ${member.name}需要低糖，「${recipe.name}」含高糖`);
+                            }
+                            if (p.healthRequirements.vegetarian && recipe.riskTags!.containsMeat) {
+                              warnings.push(`🥬 ${member.name}素食，「${recipe.name}」含肉类`);
+                            }
+                            if (p.healthRequirements.glutenFree && recipe.riskTags!.containsGluten) {
+                              warnings.push(`🌾 ${member.name}无麸质，「${recipe.name}」含麸质`);
+                            }
+                          }
+                        }
+                        if (warnings.length === 0) return '✅ 当前选菜与已选成员的口味画像未检测到明显冲突';
+                        return [...new Set(warnings)].slice(0, 5).join('；') + (warnings.length > 5 ? `；还有${warnings.length - 5}项...` : '');
+                      })()}
+                    </div>
+                  </div>
+                )}
+                <div className="grid sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto p-1">
                   {recipes.map((recipe) => {
                     const isSelected = selectedRecipes.includes(recipe.id);
+                    const hasRisks = recipe.riskTags && (
+                      recipe.riskTags.containsAllergens.length > 0 ||
+                      recipe.riskTags.highSalt ||
+                      recipe.riskTags.highOil ||
+                      recipe.riskTags.highSugar ||
+                      recipe.riskTags.containsMeat ||
+                      recipe.riskTags.spicyLevel !== 'none'
+                    );
                     return (
-                      <button
+                      <div
                         key={recipe.id}
                         onClick={() => toggleRecipe(recipe.id)}
                         className={clsx(
-                          'text-left p-4 rounded-xl border-2 transition-all',
+                          'text-left p-4 rounded-xl border-2 transition-all cursor-pointer',
                           isSelected
                             ? 'border-rose-400 bg-rose-50 shadow-sm'
                             : 'border-stone-200 hover:border-rose-200 bg-white'
@@ -834,8 +1087,28 @@ export default function Feasts() {
                               {tag}
                             </span>
                           ))}
+                          {hasRisks && (
+                            <>
+                              {recipe.riskTags!.containsAllergens.slice(0, 1).map((a) => (
+                                <span key={a} className="text-[10px] px-1.5 py-0.5 bg-red-100 text-red-700 rounded-full">
+                                  含{a}
+                                </span>
+                              ))}
+                              {recipe.riskTags!.highSalt && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">高盐</span>
+                              )}
+                              {recipe.riskTags!.highOil && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">高油</span>
+                              )}
+                              {recipe.riskTags!.spicyLevel !== 'none' && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded-full">
+                                  {recipe.riskTags!.spicyLevel === 'mild' ? '微辣' : recipe.riskTags!.spicyLevel === 'medium' ? '中辣' : '重辣'}
+                                </span>
+                              )}
+                            </>
+                          )}
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -866,6 +1139,148 @@ export default function Feasts() {
           </div>
         </div>
       )}
+
+      {showMemberManager && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+              <div>
+                <h2 className="text-xl font-bold text-stone-800 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-rose-500" />
+                  家庭成员管理
+                </h2>
+                <p className="text-sm text-stone-500 mt-0.5">管理家庭成员，设置口味画像、忌口和过敏源</p>
+              </div>
+              <button
+                onClick={() => setShowMemberManager(false)}
+                className="p-2 rounded-lg hover:bg-stone-100 text-stone-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="bg-stone-50 rounded-xl p-4 border border-stone-200">
+                <div className="text-sm font-semibold text-stone-700 mb-2">添加新成员</div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMemberName}
+                    onChange={(e) => setNewMemberName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddMember())}
+                    placeholder="姓名，如爷爷、妈妈、小明"
+                    className="flex-1 px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm outline-none focus:border-rose-400"
+                  />
+                  <input
+                    type="text"
+                    value={newMemberRole}
+                    onChange={(e) => setNewMemberRole(e.target.value)}
+                    placeholder="关系/角色（可选）"
+                    className="px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm outline-none focus:border-rose-400 w-36"
+                  />
+                  <button
+                    onClick={handleAddMember}
+                    disabled={!newMemberName.trim()}
+                    className="px-4 py-2 bg-rose-500 text-white rounded-lg text-sm font-medium hover:bg-rose-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    <Plus className="w-4 h-4" /> 添加
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {members.length === 0 ? (
+                  <div className="text-center py-10 text-stone-400">
+                    <User className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">还没有添加家庭成员</p>
+                  </div>
+                ) : (
+                  members.map((m) => {
+                    const profile = m.profile;
+                    const hasAllergens = profile && profile.allergens.length > 0;
+                    const hasAvoided = profile && profile.avoidedIngredients.length > 0;
+                    const hasHealth = profile && (profile.healthRequirements.lowSalt || profile.healthRequirements.lowOil || profile.healthRequirements.lowSugar || profile.healthRequirements.vegetarian || profile.healthRequirements.glutenFree);
+                    return (
+                      <div
+                        key={m.id}
+                        className="bg-white rounded-xl border border-stone-200 p-4 flex items-center gap-4 hover:border-rose-200 transition"
+                      >
+                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white font-bold shrink-0">
+                          {m.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-stone-800">{m.name}</span>
+                            {m.role && <span className="text-xs text-stone-500 px-2 py-0.5 bg-stone-100 rounded-full">{m.role}</span>}
+                            {profile && <span title="已设置口味画像"><Sparkles size={12} className="text-amber-400" /></span>}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {hasAllergens && profile!.allergens.slice(0, 2).map((a, i) => (
+                              <span key={i} className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded-full border border-red-100">
+                                ⚠ {a.name}过敏
+                              </span>
+                            ))}
+                            {hasAvoided && profile!.avoidedIngredients.slice(0, 2).map((ing, i) => (
+                              <span key={i} className="text-[10px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded-full border border-orange-100">
+                                不吃{ing}
+                              </span>
+                            ))}
+                            {hasHealth && (
+                              <>
+                                {profile!.healthRequirements.lowSalt && (
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded-full border border-green-100">低盐</span>
+                                )}
+                                {profile!.healthRequirements.lowOil && (
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded-full border border-green-100">低油</span>
+                                )}
+                                {profile!.healthRequirements.lowSugar && (
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded-full border border-green-100">低糖</span>
+                                )}
+                                {profile!.healthRequirements.vegetarian && (
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded-full border border-green-100">素食</span>
+                                )}
+                              </>
+                            )}
+                            {!profile && (
+                              <span className="text-[10px] px-1.5 py-0.5 bg-stone-100 text-stone-500 rounded-full">
+                                未设置口味画像
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => setProfileEditor({ open: true, memberId: m.id, memberName: m.name })}
+                            className="px-3 py-1.5 text-xs bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition font-medium flex items-center gap-1"
+                          >
+                            <Edit3 size={12} />
+                            画像
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMember(m.id)}
+                            className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                            title="删除成员"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <MemberProfileEditor
+        open={profileEditor.open}
+        memberId={profileEditor.memberId}
+        memberName={profileEditor.memberName}
+        onClose={() => setProfileEditor({ ...profileEditor, open: false })}
+        onSaved={() => fetchData()}
+      />
     </div>
   );
 }

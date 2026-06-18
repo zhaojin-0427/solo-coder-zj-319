@@ -12,9 +12,11 @@ import {
   Lightbulb,
   Save,
   Search,
+  ShieldAlert,
 } from 'lucide-react';
 import { recipeApi } from '@/lib/api';
 import type { Recipe, ParsedRecipe, Ingredient, StepCard, HeatLevel, StepType, IngredientCategory } from '@/types';
+import { RecipeRiskTagsEditor } from '@/components/RecipeRiskTagsEditor';
 import { clsx } from 'clsx';
 
 const heatLevelMap: Record<HeatLevel, { label: string; color: string }> = {
@@ -54,6 +56,12 @@ export default function Recipes() {
 
   const [ingredients, setIngredients] = useState<Omit<Ingredient, 'id'>[]>([]);
   const [steps, setSteps] = useState<Omit<StepCard, 'id' | 'recipeId'>[]>([]);
+
+  const [riskTagsEditor, setRiskTagsEditor] = useState<{ open: boolean; recipeId: string; recipeName: string }>({
+    open: false,
+    recipeId: '',
+    recipeName: '',
+  });
 
   const fetchRecipes = () => {
     setLoading(true);
@@ -300,20 +308,60 @@ export default function Recipes() {
                   <Clock className="w-4 h-4 text-rose-500" />
                   {recipe.steps.reduce((s, st) => s + st.duration, 0)}分钟
                 </span>
+                {recipe.riskTags && (recipe.riskTags.containsAllergens.length > 0 || recipe.riskTags.highSalt || recipe.riskTags.highOil || recipe.riskTags.highSugar) && (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <ShieldAlert className="w-4 h-4" />
+                    有风险标签
+                  </span>
+                )}
               </div>
 
-              <div className="pt-4 border-t border-stone-100 space-y-2">
-                {recipe.steps.slice(0, 2).map((step) => (
-                  <div key={step.id} className="flex items-start gap-2 text-sm">
-                    <span className="w-5 h-5 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                      {step.order}
+              {recipe.riskTags && (
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {recipe.riskTags.containsAllergens.slice(0, 3).map((a) => (
+                    <span key={a} className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded-full border border-red-100">
+                      含{a}
                     </span>
-                    <span className="text-stone-600 truncate">{step.title}</span>
-                  </div>
-                ))}
-                {recipe.steps.length > 2 && (
-                  <p className="text-xs text-stone-400 pl-7">还有{recipe.steps.length - 2}个步骤...</p>
-                )}
+                  ))}
+                  {recipe.riskTags.highSalt && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-full border border-amber-100">高盐</span>
+                  )}
+                  {recipe.riskTags.highOil && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-full border border-amber-100">高油</span>
+                  )}
+                  {recipe.riskTags.highSugar && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-full border border-amber-100">高糖</span>
+                  )}
+                  {recipe.riskTags.spicyLevel !== 'none' && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-rose-50 text-rose-700 rounded-full border border-rose-100">
+                      {recipe.riskTags.spicyLevel === 'mild' ? '微辣' : recipe.riskTags.spicyLevel === 'medium' ? '中辣' : '重辣'}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
+                <button
+                  onClick={() => setRiskTagsEditor({ open: true, recipeId: recipe.id, recipeName: recipe.name })}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition font-medium"
+                >
+                  <ShieldAlert size={12} />
+                  {recipe.riskTags ? '编辑风险标签' : '设置风险标签'}
+                </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => openEdit(recipe)}
+                    className="p-1.5 rounded-lg hover:bg-orange-50 text-stone-500 hover:text-orange-600 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(recipe.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-stone-500 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -636,6 +684,14 @@ export default function Recipes() {
           </div>
         </div>
       )}
+
+      <RecipeRiskTagsEditor
+        open={riskTagsEditor.open}
+        recipeId={riskTagsEditor.recipeId}
+        recipeName={riskTagsEditor.recipeName}
+        onClose={() => setRiskTagsEditor({ ...riskTagsEditor, open: false })}
+        onSaved={() => fetchRecipes()}
+      />
     </div>
   );
 }
