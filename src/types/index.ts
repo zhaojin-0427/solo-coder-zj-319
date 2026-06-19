@@ -2,61 +2,6 @@ export type IngredientCategory = 'main' | 'seasoning' | 'side';
 
 export type PurchaseStatus = 'pending' | 'purchased' | 'out-of-stock' | 'replaced';
 
-export type TasteLevel = 'none' | 'mild' | 'medium' | 'strong';
-export type HealthPriority = 'low' | 'medium' | 'high' | 'critical';
-export type AllergenType =
-  | 'peanut'
-  | 'tree-nut'
-  | 'milk'
-  | 'egg'
-  | 'wheat'
-  | 'soy'
-  | 'fish'
-  | 'shellfish'
-  | 'sesame'
-  | 'other';
-
-export interface TastePreference {
-  spicy: TasteLevel;
-  sweet: TasteLevel;
-  salty: TasteLevel;
-  sour: TasteLevel;
-  greasy: TasteLevel;
-}
-
-export interface HealthRequirement {
-  lowSalt: boolean;
-  lowOil: boolean;
-  lowSugar: boolean;
-  vegetarian: boolean;
-  glutenFree: boolean;
-  notes?: string;
-}
-
-export interface MemberProfile {
-  tastePreference: TastePreference;
-  avoidedIngredients: string[];
-  allergens: Array<{ type: AllergenType; name: string; severity: HealthPriority }>;
-  healthRequirements: HealthRequirement;
-  favoriteIngredients: string[];
-  importantNotes?: string;
-}
-
-export interface RecipeRiskTags {
-  spicyLevel: TasteLevel;
-  sweetLevel: TasteLevel;
-  saltyLevel: TasteLevel;
-  greasyLevel: TasteLevel;
-  containsAllergens: AllergenType[];
-  highSalt: boolean;
-  highOil: boolean;
-  highSugar: boolean;
-  containsMeat: boolean;
-  containsGluten: boolean;
-  keyIngredients: string[];
-  replaceableIngredients: Array<{ original: string; alternatives: string[] }>;
-}
-
 export interface Ingredient {
   id: string;
   name: string;
@@ -114,7 +59,6 @@ export interface Recipe {
   updatedAt: string;
   latestReadyTime?: string;
   keepWarmDuration?: number;
-  riskTags?: RecipeRiskTags;
 }
 
 export interface ParsedRecipe {
@@ -128,7 +72,6 @@ export interface Member {
   name: string;
   avatar?: string;
   role?: string;
-  profile?: MemberProfile;
 }
 
 export type TaskType = 'wash-cut' | 'prep' | 'cooking' | 'plating';
@@ -196,69 +139,6 @@ export interface CookingSchedule {
   updatedAt: string;
 }
 
-export type RiskType = 'allergen' | 'avoided-ingredient' | 'taste-mismatch' | 'health-conflict';
-export type RiskSeverity = 'info' | 'warning' | 'danger';
-
-export interface RecipeMemberRisk {
-  riskId: string;
-  memberId: string;
-  memberName: string;
-  recipeId: string;
-  recipeName: string;
-  type: RiskType;
-  severity: RiskSeverity;
-  category: string;
-  description: string;
-  suggestions: string[];
-  affectedIngredients?: string[];
-}
-
-export interface RecipeCompatibilityScore {
-  recipeId: string;
-  recipeName: string;
-  totalScore: number;
-  satisfiedMembers: number;
-  totalMembers: number;
-  satisfiedPercentage: number;
-  riskCount: number;
-  criticalRiskCount: number;
-  warningRiskCount: number;
-  risks: RecipeMemberRisk[];
-}
-
-export interface FeastCompatibilityResult {
-  feastId: string;
-  overallScore: number;
-  overallPercentage: number;
-  totalRiskCount: number;
-  criticalRiskCount: number;
-  warningRiskCount: number;
-  recipeScores: RecipeCompatibilityScore[];
-  allRisks: RecipeMemberRisk[];
-  summary: string[];
-}
-
-export type ConflictResolutionStatus = 'pending' | 'confirmed' | 'resolved' | 'ignored';
-
-export interface FeastRiskResolution {
-  id: string;
-  feastId: string;
-  riskId: string;
-  status: ConflictResolutionStatus;
-  resolutionType?: 'replace-recipe' | 'replace-ingredient' | 'adjust-seasoning' | 'exclude-member' | 'custom';
-  resolutionNote?: string;
-  handledBy?: string;
-  handledAt?: string;
-}
-
-export interface FeastRiskCheck {
-  feastId: string;
-  compatibility: FeastCompatibilityResult;
-  resolutions: FeastRiskResolution[];
-  generatedAt: string;
-  updatedAt: string;
-}
-
 export interface Feast {
   id: string;
   name: string;
@@ -270,8 +150,6 @@ export interface Feast {
   status: FeastStatus;
   createdAt: string;
   schedule?: CookingSchedule;
-  riskCheck?: FeastRiskCheck;
-  attendeeMemberIds?: string[];
 }
 
 export interface Review {
@@ -372,45 +250,4 @@ export interface ScheduleOverview {
   earliestStart: string;
   memberCount: number;
   updatedAt: string;
-}
-
-export interface HighFrequencyAvoided {
-  name: string;
-  count: number;
-  type: 'allergen' | 'avoided' | 'health';
-}
-
-export interface RecipeCompatibilityStat {
-  recipeId: string;
-  recipeName: string;
-  avgScore: number;
-  usageCount: number;
-  avgRiskCount: number;
-}
-
-export interface MemberTasteSatisfaction {
-  memberId: string;
-  memberName: string;
-  satisfactionRate: number;
-  totalFeasts: number;
-  satisfiedFeasts: number;
-}
-
-export interface RiskProcessingStat {
-  totalRisks: number;
-  resolvedRisks: number;
-  pendingRisks: number;
-  ignoredRisks: number;
-  processingRate: number;
-}
-
-export interface FeastRiskOverviewItem {
-  feastId: string;
-  feastName: string;
-  feastDate: string;
-  riskCount: number;
-  criticalCount: number;
-  pendingCount: number;
-  processingRate: number;
-  overallScore: number;
 }

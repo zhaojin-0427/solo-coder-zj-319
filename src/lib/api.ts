@@ -24,18 +24,6 @@ import type {
   EquipmentUsageItem,
   ScheduleSummary,
   MemberScheduleLoad,
-  MemberProfile,
-  RecipeRiskTags,
-  FeastCompatibilityResult,
-  RecipeCompatibilityScore,
-  FeastRiskCheck,
-  ConflictResolutionStatus,
-  FeastRiskResolution,
-  HighFrequencyAvoided,
-  RecipeCompatibilityStat,
-  MemberTasteSatisfaction,
-  RiskProcessingStat,
-  FeastRiskOverviewItem,
 } from '../types';
 
 const API_BASE = '/api';
@@ -82,12 +70,6 @@ export const recipeApi = {
       body: JSON.stringify(data),
     }),
   delete: (id: string) => request<void>(`/recipes/${id}`, { method: 'DELETE' }),
-  getRiskTags: (id: string) => request<RecipeRiskTags>(`/recipes/${id}/risk-tags`),
-  saveRiskTags: (id: string, tags: RecipeRiskTags) =>
-    request<RecipeRiskTags>(`/recipes/${id}/risk-tags`, {
-      method: 'PUT',
-      body: JSON.stringify(tags),
-    }),
 };
 
 export const stepApi = {
@@ -124,12 +106,6 @@ export const memberApi = {
       body: JSON.stringify(data),
     }),
   delete: (id: string) => request<void>(`/members/${id}`, { method: 'DELETE' }),
-  getProfile: (id: string) => request<MemberProfile>(`/members/${id}/profile`),
-  saveProfile: (id: string, profile: MemberProfile) =>
-    request<MemberProfile>(`/members/${id}/profile`, {
-      method: 'PUT',
-      body: JSON.stringify(profile),
-    }),
 };
 
 export const feastApi = {
@@ -192,35 +168,6 @@ export const feastApi = {
       method: 'PUT',
       body: JSON.stringify({ updates }),
     }),
-  computeCompatibility: (feastId: string, memberIds?: string[]) =>
-    request<FeastCompatibilityResult>(`/feasts/${feastId}/compatibility`, {
-      method: 'POST',
-      body: JSON.stringify({ memberIds }),
-    }),
-  getCompatibility: (feastId: string) =>
-    request<FeastCompatibilityResult>(`/feasts/${feastId}/compatibility`),
-  getRiskCheck: (feastId: string) => request<FeastRiskCheck>(`/feasts/${feastId}/risk-check`),
-  updateAttendees: (feastId: string, memberIds: string[]) =>
-    request<string[]>(`/feasts/${feastId}/attendees`, {
-      method: 'PUT',
-      body: JSON.stringify({ memberIds }),
-    }),
-  updateRiskResolution: (
-    feastId: string,
-    riskId: string,
-    data: {
-      status: ConflictResolutionStatus;
-      resolutionType?: FeastRiskResolution['resolutionType'];
-      resolutionNote?: string;
-      handledBy?: string;
-    }
-  ) =>
-    request<FeastRiskCheck>(`/feasts/${feastId}/risks/${riskId}/resolution`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-  getRecipeCompatibility: (feastId: string, recipeId: string) =>
-    request<RecipeCompatibilityScore>(`/feasts/${feastId}/recipe-compatibility/${recipeId}`),
 };
 
 export const reviewApi = {
@@ -291,10 +238,4 @@ export const statsApi = {
   getEquipmentUsage: () => request<EquipmentUsageItem[]>('/stats/equipment-usage'),
   getScheduleSummary: () => request<ScheduleSummary>('/stats/schedule-summary'),
   getMemberScheduleLoad: () => request<MemberScheduleLoad[]>('/stats/member-schedule-load'),
-  getHighFrequencyAvoided: () => request<HighFrequencyAvoided[]>('/stats/high-frequency-avoided'),
-  getRecipeCompatibility: () => request<RecipeCompatibilityStat[]>('/stats/recipe-compatibility'),
-  getMemberTasteSatisfaction: () =>
-    request<MemberTasteSatisfaction[]>('/stats/member-taste-satisfaction'),
-  getRiskProcessing: () => request<RiskProcessingStat>('/stats/risk-processing'),
-  getFeastRiskOverview: () => request<FeastRiskOverviewItem[]>('/stats/feast-risk-overview'),
 };

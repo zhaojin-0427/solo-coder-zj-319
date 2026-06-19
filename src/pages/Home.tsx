@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ChefHat, Users, ClipboardList, MessageSquare, ChevronRight, Sparkles, Clock, AlertCircle, ShoppingCart, CalendarClock, CookingPot, ShieldAlert, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ChefHat, Users, ClipboardList, MessageSquare, ChevronRight, Sparkles, Clock, AlertCircle, ShoppingCart, CalendarClock, CookingPot } from 'lucide-react';
 import { statsApi, recipeApi, feastApi, scheduleApi } from '@/lib/api';
-import type { StatsOverview, Recipe, Feast, FeastPurchaseOverview, ScheduleOverview, FeastRiskOverviewItem } from '@/types';
+import type { StatsOverview, Recipe, Feast, FeastPurchaseOverview, ScheduleOverview } from '@/types';
 
 export default function Home() {
   const [overview, setOverview] = useState<StatsOverview | null>(null);
@@ -9,7 +9,6 @@ export default function Home() {
   const [recentFeasts, setRecentFeasts] = useState<Feast[]>([]);
   const [purchaseOverview, setPurchaseOverview] = useState<FeastPurchaseOverview[]>([]);
   const [recentSchedules, setRecentSchedules] = useState<ScheduleOverview[]>([]);
-  const [riskOverview, setRiskOverview] = useState<FeastRiskOverviewItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,14 +18,12 @@ export default function Home() {
       feastApi.getAll(),
       statsApi.getPurchaseOverview(),
       scheduleApi.getRecent().catch(() => []),
-      statsApi.getFeastRiskOverview().catch(() => []),
-    ]).then(([overview, recipes, feasts, purchase, schedules, risks]) => {
+    ]).then(([overview, recipes, feasts, purchase, schedules]) => {
       setOverview(overview);
       setRecentRecipes(recipes.slice(0, 3));
       setRecentFeasts(feasts.slice(0, 3));
       setPurchaseOverview(purchase);
       setRecentSchedules(schedules);
-      setRiskOverview(risks);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -267,90 +264,6 @@ export default function Home() {
             <div className="col-span-full text-center py-8 text-stone-400">
               <CookingPot className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">暂无排程，前往家宴分工页生成烹饪排程</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-lg font-bold text-stone-800 flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-amber-500" />
-              近期家宴忌口风险概览
-            </h3>
-            <p className="text-sm text-stone-500 mt-1">口味与忌口适配度及风险处理进度</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-stone-400" />
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {riskOverview.slice(0, 6).map((item) => {
-            const scoreBg =
-              item.overallScore >= 80
-                ? 'from-green-400 to-emerald-500'
-                : item.overallScore >= 60
-                ? 'from-amber-400 to-orange-500'
-                : 'from-red-400 to-rose-500';
-            return (
-              <div
-                key={item.feastId}
-                className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-transparent border border-amber-100 hover:border-amber-200 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="font-semibold text-stone-800 text-sm">{item.feastName}</h4>
-                    <p className="text-xs text-stone-500 mt-0.5 flex items-center gap-1">
-                      <CalendarClock className="w-3 h-3" />
-                      {item.feastDate}
-                    </p>
-                  </div>
-                  <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${scoreBg} text-white text-sm font-bold shadow-md`}>
-                    {item.overallScore}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-xs mb-2">
-                  {item.riskCount > 0 ? (
-                    <>
-                      <span className="inline-flex items-center gap-1 text-amber-700">
-                        <AlertTriangle size={12} />
-                        {item.riskCount}项风险
-                      </span>
-                      {item.criticalCount > 0 && (
-                        <span className="inline-flex items-center gap-1 text-red-600 font-medium">
-                          <AlertCircle size={12} />
-                          {item.criticalCount}项严重
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-emerald-600">
-                      <CheckCircle2 size={12} />
-                      无风险
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] text-stone-500">
-                    <span>处理进度</span>
-                    <span className="font-medium text-stone-700">{item.processingRate}%</span>
-                  </div>
-                  <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full transition-all"
-                      style={{ width: `${item.processingRate}%` }}
-                    ></div>
-                  </div>
-                  {item.pendingCount > 0 && (
-                    <div className="text-[11px] text-amber-600">还有{item.pendingCount}项待处理</div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {riskOverview.length === 0 && (
-            <div className="col-span-full text-center py-8 text-stone-400">
-              <ShieldAlert className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">暂无风险数据，开始创建家宴并设置成员口味画像吧</p>
             </div>
           )}
         </div>
